@@ -1,15 +1,12 @@
+import { Link } from "expo-router";
 import { Text, View } from "react-native";
 
 export default function Index() {
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <Text>Welcom to CloudNest</Text>
+    <View className="flex-1 justify-center items-center">
+      <Text className="text-3xl text-primary font-medium">Welcome to CloudNest!</Text>
+      <Link href="/onboarding">Onboarding</Link>
+
     </View>
   );
 }

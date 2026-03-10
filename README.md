@@ -1,50 +1,61 @@
-# Welcome to your Expo app 👋
+# CloudNest
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+CloudNest is a lightweight private cloud vault built with React Native and Expo.  
+It allows users to securely upload and store personal files such as photos, videos, PDFs, and notes in the cloud, freeing up space on their device while keeping their data accessible from anywhere.
 
-## Get started
+The goal of CloudNest is to provide a minimal, privacy-focused storage experience without the complexity of traditional cloud storage platforms.
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+## Features
 
-2. Start the app
+- Secure user authentication
+- Upload files (photos, videos, PDFs, documents)
+- Store files safely in the cloud
+- Download files anytime on another device
+- Delete files to free up local phone storage
+- Minimal and privacy-focused interface
+- Cross-platform (iOS & Android)
 
-   ```bash
-   npx expo start
-   ```
+Future enhancements may include:
 
-In the output, you'll find options to open the app in a
+- Client-side file encryption
+- Biometric vault lock (Face ID / Fingerprint)
+- Storage usage analytics
+- Secure file preview
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+---
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Tech Stack
 
-## Get a fresh project
+CloudNest is built using modern mobile development tools:
 
-When you're ready, run:
+- React Native
+- Expo
+- TypeScript
+- NativeWind
+- Appwrite (Backend as a Service)
+
+---
+
+## Project Goal
+
+This project is being built as a real-world mobile development exercise focused on learning:
+
+- Mobile file handling
+- Secure storage practices
+- Backend integration with a BaaS
+- Mobile permissions management
+- State management in React Native
+- Mobile app deployment
+
+---
+
+## 🛠 Installation
+
+Clone the repository and install dependencies:
 
 ```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+git clone https://github.com/OlajuwonX/CloudNest.git
+cd CloudNest
+npm install
