@@ -1,46 +1,48 @@
 import React, { useEffect } from 'react'
 import { View } from 'react-native'
 import Animated, {
+  cancelAnimation,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated'
 
-// ─── Props ────────────────────────────────────────────────────────────────────
+// ─── Props ─── //
 
 interface ProgressBarProps {
-  /** Value between 0 and 100 */
+  /** from 0 and 100 */
   progress: number
-  /** Fill colour — defaults to primary (#14532D) */
+  /** fill colour — defaults to primary (#14532D) */
   color?: string
-  /** Track (background) colour — defaults to border (#E5E7EB) */
+  /** track (background) colour — defaults to border (#E5E7EB) */
   trackColor?: string
-  /** Bar height in pixels — defaults to 8 */
+  /** bar height in pixels — defaults to 8 */
   height?: number
-  /** Extra NativeWind classes on the outer wrapper */
+  /** extra  classes on the outer wrapper */
   className?: string
-  /** Animation duration in ms — defaults to 400 */
+  /** animation duration in ms — defaults to 400 */
   duration?: number
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ProgressBar({
   progress,
-  color      = '#14532D',
+  color = '#14532D',
   trackColor = '#E5E7EB',
-  height     = 8,
-  className  = '',
-  duration   = 400,
+  height = 8,
+  className = '',
+  duration = 400,
 }: ProgressBarProps) {
-  // Clamp progress to 0–100
+  // clamp progress to 0–100
   const clamped = Math.min(100, Math.max(0, progress))
 
   const width = useSharedValue(0)
 
   useEffect(() => {
     width.value = withTiming(clamped, { duration })
-  }, [clamped])
+    // cancel any in-flight animation when the component unmounts or deps change
+    return () => cancelAnimation(width)
+  }, [clamped, duration, width])
 
   const animatedStyle = useAnimatedStyle(() => ({
     width: `${width.value}%`,

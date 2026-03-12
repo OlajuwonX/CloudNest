@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react'
 import { View } from 'react-native'
 import Animated, {
+  cancelAnimation,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -10,7 +11,7 @@ import Animated, {
 
 import type { SkeletonVariant } from '@/types'
 
-// ─── Shimmer block ────────────────────────────────────────────────────────────
+// ─── Shimmer block ──── //
 
 function ShimmerBlock({ className = '' }: { className?: string }) {
   const opacity = useSharedValue(1)
@@ -24,7 +25,9 @@ function ShimmerBlock({ className = '' }: { className?: string }) {
       -1,   // infinite
       true, // reverse
     )
-  }, [])
+    // cancel the infinite animation when the skeleton unmounts
+    return () => cancelAnimation(opacity)
+  }, [opacity])
 
   const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }))
 
@@ -36,15 +39,15 @@ function ShimmerBlock({ className = '' }: { className?: string }) {
   )
 }
 
-// ─── Variant layouts ──────────────────────────────────────────────────────────
+// ─── Variant layouts ──── //
 
 function ListItemSkeleton() {
   return (
     <View className="flex-row items-center gap-3 px-4 py-3">
-      {/* Avatar circle */}
+      {/* avatar circle */}
       <ShimmerBlock className="w-12 h-12 rounded-full" />
 
-      {/* Two text lines */}
+      {/* two text lines */}
       <View className="flex-1 gap-2">
         <ShimmerBlock className="h-4 w-3/4" />
         <ShimmerBlock className="h-3 w-1/2" />
@@ -79,16 +82,15 @@ function TextSkeleton() {
   )
 }
 
-// ─── Props ────────────────────────────────────────────────────────────────────
+// ─── Props ─── //
 
 interface LoadingSkeletonProps {
   variant?: SkeletonVariant
-  /** How many skeleton items to render — defaults to 3 */
+  /** skeleton counts — defaults to 3 **/
   count?: number
   className?: string
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function LoadingSkeleton({
   variant = 'list-item',
@@ -97,11 +99,11 @@ export default function LoadingSkeleton({
 }: LoadingSkeletonProps) {
   const renderItem = (index: number) => {
     switch (variant) {
-      case 'card':       return <CardSkeleton     key={index} />
-      case 'avatar':     return <AvatarSkeleton   key={index} />
-      case 'text':       return <TextSkeleton     key={index} />
+      case 'card': return <CardSkeleton key={index} />
+      case 'avatar': return <AvatarSkeleton key={index} />
+      case 'text': return <TextSkeleton key={index} />
       case 'list-item':
-      default:           return <ListItemSkeleton key={index} />
+      default: return <ListItemSkeleton key={index} />
     }
   }
 
