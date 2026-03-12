@@ -1,6 +1,32 @@
-import { Stack } from "expo-router";
-import "./global.css";
+import { Stack } from 'expo-router'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { MD3LightTheme, PaperProvider } from 'react-native-paper'
+import './global.css'
+
+// ─── react-native-paper theme aligned to the CloudNest palette ───────────────
+
+const paperTheme = {
+  ...MD3LightTheme,
+  colors: {
+    ...MD3LightTheme.colors,
+    primary:          '#14532D',  // dark green   — input focus ring, active label
+    secondary:        '#1E3A8A',  // dark blue
+    error:            '#DC2626',  // danger red    — error borders / labels
+    background:       '#F8FAFC',
+    surface:          '#FFFFFF',
+    outline:          '#E5E7EB',  // resting input border
+    onSurfaceVariant: '#6B7280',  // placeholder & floating label colour
+  },
+}
+
+// ─── Root layout ──────────────────────────────────────────────────────────────
 
 export default function RootLayout() {
-  return <Stack />;
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <PaperProvider theme={paperTheme}>
+        <Stack screenOptions={{ headerShown: false }} />
+      </PaperProvider>
+    </GestureHandlerRootView>
+  )
 }
