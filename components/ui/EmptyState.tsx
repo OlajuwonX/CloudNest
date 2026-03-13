@@ -1,23 +1,20 @@
-import { Feather } from '@expo/vector-icons'
-import React from 'react'
-import { Text, View } from 'react-native'
+import { Feather } from "@expo/vector-icons";
+import React from "react";
+import { Text, View } from "react-native";
 
-import Button from './Button'
+import Button from "./Button";
 
-// ─── Props ────────────────────────────────────────────────────────────────────
+// ─── Props ─── //
 
 interface EmptyStateProps {
-  /** Feather icon name */
-  icon: keyof typeof Feather.glyphMap
-  title: string
-  subtitle?: string
-  /** Label for the optional CTA button */
-  actionLabel?: string
-  onAction?: () => void
-  className?: string
+  icon: keyof typeof Feather.glyphMap;
+  title: string;
+  subtitle?: string;
+  /** optional CTA button label */
+  actionLabel?: string;
+  onAction?: () => void;
+  className?: string;
 }
-
-// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function EmptyState({
   icon,
@@ -25,16 +22,17 @@ export default function EmptyState({
   subtitle,
   actionLabel,
   onAction,
-  className = '',
+  className = "",
 }: EmptyStateProps) {
   return (
-    <View className={`flex-1 items-center justify-center px-8 py-12 ${className}`}>
-      {/* Icon circle */}
+    <View
+      className={`flex-1 items-center justify-center px-8 py-12 ${className}`}
+    >
+      {/* icon circle */}
       <View className="w-24 h-24 rounded-full bg-accent-light items-center justify-center mb-6">
         <Feather name={icon} size={40} color="#14532D" />
       </View>
 
-      {/* Text */}
       <Text className="text-xl font-bold text-text text-center mb-2">
         {title}
       </Text>
@@ -45,7 +43,7 @@ export default function EmptyState({
         </Text>
       ) : null}
 
-      {/* Optional CTA */}
+      {/* optional CTA */}
       {actionLabel && onAction ? (
         <Button
           title={actionLabel}
@@ -56,5 +54,5 @@ export default function EmptyState({
         />
       ) : null}
     </View>
-  )
+  );
 }
