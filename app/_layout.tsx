@@ -1,6 +1,7 @@
 import { Stack } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { MD3LightTheme, PaperProvider } from "react-native-paper";
+import Toast from "react-native-toast-message";
 import "./global.css";
 
 // ─── react-native-paper theme ─── //
@@ -24,6 +25,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <PaperProvider theme={paperTheme}>
         <Stack screenOptions={{ headerShown: false }} />
+        <Toast />
       </PaperProvider>
     </GestureHandlerRootView>
   );
