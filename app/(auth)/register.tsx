@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui";
+import { toast } from "@backpackapp-io/react-native-toast";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import {
@@ -9,8 +10,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import { Text, TextInput, useTheme } from "react-native-paper";
-import Toast from "react-native-toast-message";
+import { Text, TextInput } from "react-native-paper";
 
 export default function RegisterScreen() {
   const [name, setName] = useState<string>("");
@@ -29,37 +29,22 @@ export default function RegisterScreen() {
 
   const handleSubmit = async () => {
     if (!name || !email || !password || !confirmPassword) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Please fill in all fields.",
-      });
+      toast.error("Please fill in all fields");
       return;
     }
     if (name.length < 6) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Name must be at least 6 characters long",
-      });
+      toast.error("Name must be at least 6 characters long");
+      return;
     }
     if (password.length < 8) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Password must contain at least 8 characters",
-      });
+      toast.error("Password must contain at least 8 characters");
+      return;
     }
     if (confirmPassword !== password) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Passwords do not match",
-      });
+      toast.error("Passwords do not match");
+      return;
     }
   };
-
-  const theme = useTheme();
 
   return (
     <KeyboardAvoidingView

@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui";
+import { toast } from "@backpackapp-io/react-native-toast";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import {
@@ -10,7 +11,6 @@ import {
     View,
 } from "react-native";
 import { Text, TextInput } from "react-native-paper";
-import Toast from "react-native-toast-message";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState<string>("");
@@ -22,19 +22,12 @@ export default function LoginScreen() {
 
   const handleSubmit = async () => {
     if (!email || !password) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Please fill in all fields.",
-      });
+      toast.error("Please fill in all fields.");
+
       return;
     }
     if (password.length < 8) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Password must contain at least 8 characters",
-      });
+      toast.error("Password must contain at least 8 characters");
     }
   };
 
