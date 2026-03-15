@@ -67,7 +67,7 @@ export default function SplashScreen2() {
             transform: [{ translateY: contentTranslateY }],
           },
         ]}
-        className="absolute bottom-0 left-0 right-0 bg-[rgba(255,255,255,0.08)] rounded-t-[32px] pt-8 px-7 border-t border-t-[rgba(255,255,255,0.18)]"
+        className="absolute bottom-0 left-0 right-0 bg-[rgba(173,244,244,0.23)] rounded-t-[32px] pt-8 px-7 border-t border-t-[rgba(255,255,255,0.18)]"
       >
         <View className="self-center bg-[rgba(74,222,128,0.2)] border border-[rgba(74,222,128,0.45)] rounded-full px-[14px] py-[5px] mb-5">
           <Text className="text-[#4ADE80] text-[13px] font-semibold tracking-[0.4px]">

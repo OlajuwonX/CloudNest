@@ -22,7 +22,7 @@ export default function LoginScreen() {
   const router = useRouter();
   const passwordRef = useRef<any>(null);
 
-  // Reads directly from the store to avoid subscribing to the full state object and re-rendering this screen on every state change.
+  // reads directly from the store to avoid subscribing to the full state object and re-rendering this screen on every state change.
   const signIn = useAuthStore((s) => s.signIn);
 
   const validate = (): boolean => {
