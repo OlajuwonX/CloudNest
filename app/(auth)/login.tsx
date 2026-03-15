@@ -1,14 +1,15 @@
 import { Button } from "@/components/ui";
+import { useAuthStore } from "@/stores/authStore";
 import { toast } from "@backpackapp-io/react-native-toast";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import {
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    StyleSheet,
-    View,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
 } from "react-native";
 import { Text, TextInput } from "react-native-paper";
 
@@ -16,19 +17,50 @@ export default function LoginScreen() {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
   const passwordRef = useRef<any>(null);
 
-  const handleSubmit = async () => {
-    if (!email || !password) {
-      toast.error("Please fill in all fields.");
+  // Reads directly from the store to avoid subscribing to the full state object and re-rendering this screen on every state change.
+  const signIn = useAuthStore((s) => s.signIn);
 
-      return;
+  const validate = (): boolean => {
+    if (!email.trim()) {
+      toast.error("Email is required");
+      return false;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Please enter a valid email");
+      return false;
+    }
+    if (!password) {
+      toast.error("Password is required");
+      return false;
     }
     if (password.length < 8) {
-      toast.error("Password must contain at least 8 characters");
+      toast.error("Password must be at least 8 characters");
+      return false;
     }
+    return true;
+  };
+
+  const handleSubmit = async () => {
+    if (!validate()) return;
+
+    setIsLoading(true);
+
+    const error = await signIn(email.trim(), password);
+
+    setIsLoading(false);
+
+    if (error) {
+      toast.error(error);
+      return;
+    }
+
+    toast.success("Welcome back! 👋");
+    router.replace("/(protected)/(tabs)/home");
   };
 
   return (
@@ -36,7 +68,7 @@ export default function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       className="flex-1 justify-center p-6 bg-background"
     >
-      <View className="flex-1 p-7  justify-center">
+      <View className="flex-1 p-7 justify-center">
         <Image
           source={require("../../assets/images/icon.png")}
           className="w-16 mx-auto mb-4"
@@ -48,6 +80,7 @@ export default function LoginScreen() {
         <Text style={styles.label} variant="titleMedium">
           Welcome back, please login to continue
         </Text>
+
         <TextInput
           label="Email"
           placeholder="johndoe@gmail.com"
@@ -57,40 +90,47 @@ export default function LoginScreen() {
           keyboardType="email-address"
           mode="outlined"
           autoComplete="email"
-          returnKeyType="done"
+          returnKeyType="next"
           onSubmitEditing={() => passwordRef.current?.focus()}
           style={styles.input}
         />
+
         <TextInput
           ref={passwordRef}
           label="Password"
           value={password}
           onChangeText={setPassword}
           autoCapitalize="none"
-          secureTextEntry
+          secureTextEntry={!showPassword}
           mode="outlined"
           returnKeyType="done"
           onSubmitEditing={handleSubmit}
           right={
             <TextInput.Icon
               icon={showPassword ? "eye-off" : "eye"}
-              onPress={() => setShowPassword(!showPassword)}
+              onPress={() => setShowPassword((prev) => !prev)}
             />
           }
           style={{ marginBottom: 10 }}
         />
+
         <Button
           title="Login"
           onPress={handleSubmit}
-          isLoading={false}
-          disabled={false}
+          isLoading={isLoading}
+          disabled={isLoading}
           variant="outline"
-          className="mt-6 rounded-3xl"
+          className="mt-6 rounded-[50px]"
         />
-        <View className="flex-row justify-center text-center gap-1 mt-3">
-          <Text>Don&apos;t have an account?</Text>
+
+        <View className="flex-row justify-center items-center mt-[18px]">
+          <Text className="text-[rgba(255,255,255,0.55)] text-[14px]">
+            Don&apos;t have an account?{" "}
+          </Text>
           <Pressable onPress={() => router.push("/register")}>
-            <Text className="text-primary font-medium">Sign Up</Text>
+            <Text className="text-[#2d45d1] font-bold text-[14px]">
+              Sign Up
+            </Text>
           </Pressable>
         </View>
       </View>

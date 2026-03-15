@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react'
-import { View } from 'react-native'
+import React, { useEffect } from "react";
+import { View } from "react-native";
 import Animated, {
   cancelAnimation,
   useAnimatedStyle,
@@ -7,39 +7,37 @@ import Animated, {
   withRepeat,
   withSequence,
   withTiming,
-} from 'react-native-reanimated'
+} from "react-native-reanimated";
 
-import type { SkeletonVariant } from '@/types'
+import type { SkeletonVariant } from "@/types";
 
 // ─── Shimmer block ──── //
 
-function ShimmerBlock({ className = '' }: { className?: string }) {
-  const opacity = useSharedValue(1)
+function ShimmerBlock({ className = "" }: { className?: string }) {
+  const opacity = useSharedValue(1);
 
   useEffect(() => {
     opacity.value = withRepeat(
       withSequence(
         withTiming(0.3, { duration: 700 }),
-        withTiming(1,   { duration: 700 }),
+        withTiming(1, { duration: 700 }),
       ),
-      -1,   // infinite
+      -1, // infinite
       true, // reverse
-    )
-    // cancel the infinite animation when the skeleton unmounts
-    return () => cancelAnimation(opacity)
-  }, [opacity])
+    );
+    // clean up function to cancel the infinite animation when the skeleton unmounts
+    return () => cancelAnimation(opacity);
+  }, [opacity]);
 
-  const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }))
+  const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
   return (
     <Animated.View
       style={animStyle}
       className={`bg-border rounded-lg ${className}`}
     />
-  )
+  );
 }
-
-// ─── Variant layouts ──── //
 
 function ListItemSkeleton() {
   return (
@@ -53,7 +51,7 @@ function ListItemSkeleton() {
         <ShimmerBlock className="h-3 w-1/2" />
       </View>
     </View>
-  )
+  );
 }
 
 function CardSkeleton() {
@@ -65,11 +63,11 @@ function CardSkeleton() {
         <ShimmerBlock className="h-3 w-1/3" />
       </View>
     </View>
-  )
+  );
 }
 
 function AvatarSkeleton() {
-  return <ShimmerBlock className="w-12 h-12 rounded-full" />
+  return <ShimmerBlock className="w-12 h-12 rounded-full" />;
 }
 
 function TextSkeleton() {
@@ -79,37 +77,40 @@ function TextSkeleton() {
       <ShimmerBlock className="h-4 w-5/6" />
       <ShimmerBlock className="h-4 w-2/3" />
     </View>
-  )
+  );
 }
 
 // ─── Props ─── //
 
 interface LoadingSkeletonProps {
-  variant?: SkeletonVariant
+  variant?: SkeletonVariant;
   /** skeleton counts — defaults to 3 **/
-  count?: number
-  className?: string
+  count?: number;
+  className?: string;
 }
 
-
 export default function LoadingSkeleton({
-  variant = 'list-item',
+  variant = "list-item",
   count = 3,
-  className = '',
+  className = "",
 }: LoadingSkeletonProps) {
   const renderItem = (index: number) => {
     switch (variant) {
-      case 'card': return <CardSkeleton key={index} />
-      case 'avatar': return <AvatarSkeleton key={index} />
-      case 'text': return <TextSkeleton key={index} />
-      case 'list-item':
-      default: return <ListItemSkeleton key={index} />
+      case "card":
+        return <CardSkeleton key={index} />;
+      case "avatar":
+        return <AvatarSkeleton key={index} />;
+      case "text":
+        return <TextSkeleton key={index} />;
+      case "list-item":
+      default:
+        return <ListItemSkeleton key={index} />;
     }
-  }
+  };
 
   return (
     <View className={className}>
       {Array.from({ length: count }, (_, i) => renderItem(i))}
     </View>
-  )
+  );
 }

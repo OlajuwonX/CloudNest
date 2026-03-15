@@ -1,52 +1,51 @@
-import React, { useEffect } from 'react'
-import { View } from 'react-native'
+import React, { useEffect } from "react";
+import { View } from "react-native";
 import Animated, {
   cancelAnimation,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
-} from 'react-native-reanimated'
+} from "react-native-reanimated";
 
 // ─── Props ─── //
 
 interface ProgressBarProps {
   /** from 0 and 100 */
-  progress: number
+  progress: number;
   /** fill colour — defaults to primary (#14532D) */
-  color?: string
+  color?: string;
   /** track (background) colour — defaults to border (#E5E7EB) */
-  trackColor?: string
+  trackColor?: string;
   /** bar height in pixels — defaults to 8 */
-  height?: number
+  height?: number;
   /** extra  classes on the outer wrapper */
-  className?: string
+  className?: string;
   /** animation duration in ms — defaults to 400 */
-  duration?: number
+  duration?: number;
 }
-
 
 export default function ProgressBar({
   progress,
-  color = '#14532D',
-  trackColor = '#E5E7EB',
+  color = "#14532D",
+  trackColor = "#E5E7EB",
   height = 8,
-  className = '',
+  className = "",
   duration = 400,
 }: ProgressBarProps) {
   // clamp progress to 0–100
-  const clamped = Math.min(100, Math.max(0, progress))
+  const clamped = Math.min(100, Math.max(0, progress));
 
-  const width = useSharedValue(0)
+  const width = useSharedValue(0);
 
   useEffect(() => {
-    width.value = withTiming(clamped, { duration })
-    // cancel any in-flight animation when the component unmounts or deps change
-    return () => cancelAnimation(width)
-  }, [clamped, duration, width])
+    width.value = withTiming(clamped, { duration });
+    // clean up function that cancels an in-flight animation to avoid memeory leaks.
+    return () => cancelAnimation(width);
+  }, [clamped, duration, width]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     width: `${width.value}%`,
-  }))
+  }));
 
   return (
     <View
@@ -64,5 +63,5 @@ export default function ProgressBar({
         ]}
       />
     </View>
-  )
+  );
 }

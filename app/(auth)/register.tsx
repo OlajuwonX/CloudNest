@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui";
+import { useAuthStore } from "@/stores/authStore";
 import { toast } from "@backpackapp-io/react-native-toast";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
@@ -20,6 +21,7 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] =
     useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const router = useRouter();
 
@@ -27,23 +29,63 @@ export default function RegisterScreen() {
   const passwordRef = useRef<any>(null);
   const confirmPasswordRef = useRef<any>(null);
 
-  const handleSubmit = async () => {
-    if (!name || !email || !password || !confirmPassword) {
-      toast.error("Please fill in all fields");
-      return;
+  // read action only, prevents this screen re-rendering on every auth state change.
+  const signUp = useAuthStore((s) => s.signUp);
+
+  const validate = (): boolean => {
+    if (!name.trim()) {
+      toast.error("Full name is required");
+      return false;
     }
-    if (name.length < 6) {
-      toast.error("Name must be at least 6 characters long");
-      return;
+    if (name.trim().length < 2) {
+      toast.error("Name must be at least 2 characters");
+      return false;
+    }
+    if (!email.trim()) {
+      toast.error("Email is required");
+      return false;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Please enter a valid email");
+      return false;
+    }
+    if (!password) {
+      toast.error("Password is required");
+      return false;
     }
     if (password.length < 8) {
-      toast.error("Password must contain at least 8 characters");
-      return;
+      toast.error("Password must be at least 8 characters");
+      return false;
+    }
+    if (!confirmPassword) {
+      toast.error("Please confirm your password");
+      return false;
     }
     if (confirmPassword !== password) {
       toast.error("Passwords do not match");
+      return false;
+    }
+    return true;
+  };
+
+  const handleSubmit = async () => {
+    if (!validate()) return;
+
+    setIsLoading(true);
+
+    // signUp handles: account.create → createEmailPasswordSession → account.get and sets user + isAuthenticated in the store on success.
+    const error = await signUp(name.trim(), email.trim(), password);
+
+    setIsLoading(false);
+
+    if (error) {
+      toast.error(error);
       return;
     }
+
+    toast.success("Welcome to CloudNest! 🎉");
+
+    router.replace("/(protected)/(tabs)/home");
   };
 
   return (
@@ -60,12 +102,13 @@ export default function RegisterScreen() {
         <Text style={styles.heading} variant="headlineMedium">
           Create Account
         </Text>
+
         <TextInput
           label="Full Name"
           placeholder="John Doe"
           value={name}
           onChangeText={setName}
-          autoCapitalize="none"
+          autoCapitalize="words"
           keyboardType="default"
           mode="outlined"
           autoComplete="name"
@@ -73,6 +116,7 @@ export default function RegisterScreen() {
           onSubmitEditing={() => emailRef.current?.focus()}
           style={styles.input}
         />
+
         <TextInput
           ref={emailRef}
           label="Email"
@@ -87,6 +131,7 @@ export default function RegisterScreen() {
           onSubmitEditing={() => passwordRef.current?.focus()}
           style={styles.input}
         />
+
         <TextInput
           ref={passwordRef}
           label="Password"
@@ -102,10 +147,11 @@ export default function RegisterScreen() {
           right={
             <TextInput.Icon
               icon={showPassword ? "eye-off" : "eye"}
-              onPress={() => setShowPassword(!showPassword)}
+              onPress={() => setShowPassword((prev) => !prev)}
             />
           }
         />
+
         <TextInput
           ref={confirmPasswordRef}
           label="Confirm Password"
@@ -121,22 +167,26 @@ export default function RegisterScreen() {
           right={
             <TextInput.Icon
               icon={showConfirmPassword ? "eye-off" : "eye"}
-              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+              onPress={() => setShowConfirmPassword((prev) => !prev)}
             />
           }
         />
+
         <Button
           title="Sign Up"
           onPress={handleSubmit}
-          isLoading={false}
-          disabled={false}
+          isLoading={isLoading}
+          disabled={isLoading}
           variant="outline"
-          className="mt-6 rounded-3xl"
+          className="mt-6 rounded-[50px]"
         />
-        <View className="flex-row justify-center text-center gap-1 mt-3">
-          <Text>Already have an account?</Text>
+
+        <View className="flex-row justify-center items-center mt-[18px]">
+          <Text className="text-[rgba(255,255,255,0.55)] text-[14px]">
+            Already have an account?{" "}
+          </Text>
           <Pressable onPress={() => router.push("/login")}>
-            <Text className="text-primary font-medium">Log In</Text>
+            <Text className="text-[#4ADE80] font-bold text-[14px]">Log in</Text>
           </Pressable>
         </View>
       </View>
