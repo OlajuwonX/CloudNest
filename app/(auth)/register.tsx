@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  StatusBar,
   StyleSheet,
   View,
 } from "react-native";
@@ -93,14 +94,20 @@ export default function RegisterScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       className="flex-1 bg-background"
     >
+      <StatusBar
+        barStyle="dark-content"
+        translucent
+        backgroundColor="transparent"
+      />
       <View className="flex-1 p-7 justify-center">
         <Image
           source={require("../../assets/images/icon.png")}
           className="w-16 mx-auto mb-4"
           style={{ height: undefined, aspectRatio: 1 }}
         />
-        <Text style={styles.heading} variant="headlineMedium">
-          Create Account
+        <Text style={styles.heading}>
+          Create Account{"\n"}
+          <Text style={styles.subHeading}>Build your private cloud vault</Text>
         </Text>
 
         <TextInput
@@ -198,6 +205,15 @@ const styles = StyleSheet.create({
   heading: {
     textAlign: "center",
     marginBottom: 12,
+    fontSize: 24,
+    fontWeight: 500,
+  },
+  subHeading: {
+    textAlign: "center",
+    fontSize: 20,
+    color: "black",
+    lineHeight: 24,
+    fontWeight: 500,
   },
   input: {
     marginBottom: 8,

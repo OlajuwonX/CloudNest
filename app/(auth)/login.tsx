@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  StatusBar,
   StyleSheet,
   View,
 } from "react-native";
@@ -68,17 +69,20 @@ export default function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       className="flex-1 justify-center p-6 bg-background"
     >
+      <StatusBar
+        barStyle="dark-content"
+        translucent
+        backgroundColor="transparent"
+      />
       <View className="flex-1 p-7 justify-center">
         <Image
           source={require("../../assets/images/icon.png")}
           className="w-16 mx-auto mb-4"
           style={{ height: undefined, aspectRatio: 1 }}
         />
-        <Text style={styles.heading} variant="headlineMedium">
-          Log in
-        </Text>
-        <Text style={styles.label} variant="titleMedium">
-          Welcome back, please login to continue
+
+        <Text style={styles.label}>
+          Welcome back{"\n"}Please login to continue
         </Text>
 
         <TextInput
@@ -139,13 +143,11 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  heading: {
-    textAlign: "center",
-    marginBottom: 4,
-  },
   label: {
     textAlign: "center",
     marginBottom: 10,
+    fontSize: 24,
+    fontWeight: 500,
   },
   input: {
     marginBottom: 8,
