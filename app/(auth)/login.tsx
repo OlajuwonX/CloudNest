@@ -78,7 +78,7 @@ export default function LoginScreen() {
             width: 110,
             height: 110,
             alignSelf: "center",
-            marginBottom: 8,
+            marginBottom: 6,
           }}
         />
 
@@ -145,12 +145,14 @@ export default function LoginScreen() {
         )}
 
         <Button
-          title="Login"
+          title={isSubmitting ? "Logging in..." : "Login"}
           onPress={handleSubmit(onSubmit)}
           isLoading={isSubmitting}
           disabled={isSubmitting}
           variant="primary"
-          className="mt-6 rounded-[50px]"
+          size="lg"
+          className="mt-6"
+          accessibilityLabel="Login button"
         />
 
         <View className="flex-row justify-center items-center mt-[18px]">

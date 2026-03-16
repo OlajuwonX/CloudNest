@@ -220,12 +220,15 @@ export default function RegisterScreen() {
         )}
 
         <Button
-          title="Sign Up"
+          title={isSubmitting ? "Signing Up..." : "Sign Up"}
           onPress={handleSubmit(onSubmit)}
           isLoading={isSubmitting}
           disabled={isSubmitting}
           variant="primary"
-          className="mt-6 rounded-[50px]"
+          hideSpinner={true}
+          size="lg"
+          className="mt-6"
+          accessibilityLabel="Sign up button"
         />
 
         <View className="flex-row justify-center items-center mt-[18px]">

@@ -31,13 +31,13 @@ const textVariant: Record<ButtonVariant, string> = {
 const containerSize: Record<ButtonSize, string> = {
   sm: "px-4 py-2 rounded-lg",
   md: "px-5 py-3.5 rounded-xl",
-  lg: "px-6 py-4 rounded-xl",
+  lg: "px-6 py-4 rounded-[40px]",
 };
 
 const textSize: Record<ButtonSize, string> = {
   sm: "text-sm",
   md: "text-base",
-  lg: "text-lg",
+  lg: "text-xl",
 };
 
 const spinnerColor: Record<ButtonVariant, string> = {
@@ -55,6 +55,7 @@ interface ButtonProps extends Omit<TouchableOpacityProps, "style"> {
   title: string;
   variant?: ButtonVariant;
   size?: ButtonSize;
+  hideSpinner?: boolean;
   isLoading?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
@@ -64,9 +65,10 @@ interface ButtonProps extends Omit<TouchableOpacityProps, "style"> {
 export default function Button({
   title,
   variant = "primary",
-  size = "md",
+  size = "lg",
   isLoading = false,
   disabled = false,
+  hideSpinner = false,
   leftIcon,
   rightIcon,
   className = "",
@@ -98,7 +100,7 @@ export default function Button({
       {!isLoading && leftIcon && <View>{leftIcon}</View>}
 
       {/* spinner or title */}
-      {isLoading ? (
+      {!hideSpinner && isLoading ? (
         <ActivityIndicator size="small" color={spinnerColor[variant]} />
       ) : (
         <Text
