@@ -7,9 +7,8 @@ import {
   Platform,
   Pressable,
   StatusBar,
-  StyleSheet,
   Text,
-  View,
+  View
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -46,12 +45,12 @@ export default function SplashScreen2() {
 
   return (
     <ImageBackground
-      source={require("../../assets/images/background.png")}
-      style={styles.background}
+      source={require("../../assets/images/background.webp")}
       resizeMode="cover"
+      className="flex-1"
     >
       {/* dark overlay so text is readable */}
-      <View style={styles.overlay} />
+      <View className="absolute inset-0 bg-[rgba(10,30,15,0.52)]" />
 
       <StatusBar
         barStyle="light-content"
@@ -104,13 +103,3 @@ export default function SplashScreen2() {
     </ImageBackground>
   );
 }
-
-const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(10, 30, 15, 0.52)",
-  },
-});

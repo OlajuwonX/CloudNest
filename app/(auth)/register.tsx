@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui";
 import { useAuthStore } from "@/stores/authStore";
 import { toast } from "@backpackapp-io/react-native-toast";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
-import { useRef, useState } from "react";
+import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import {
   Image,
   KeyboardAvoidingView,
@@ -13,71 +15,58 @@ import {
   View,
 } from "react-native";
 import { Text, TextInput } from "react-native-paper";
+import { z } from "zod";
+
+const registerSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(1, "Full name is required")
+      .min(2, "Name must be at least 2 characters"),
+    email: z
+      .string()
+      .trim()
+      .min(1, "Email is required")
+      .email("Please enter a valid email"),
+    password: z
+      .string()
+      .min(1, "Password is required")
+      .min(8, "Password must be at least 8 characters"),
+    confirmPassword: z.string().min(1, "Please confirm your password"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
+type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function RegisterScreen() {
-  const [name, setName] = useState<string>("");
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [confirmPassword, setConfirmPassword] = useState<string>("");
-  const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [showConfirmPassword, setShowConfirmPassword] =
-    useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-
   const router = useRouter();
-
-  const emailRef = useRef<any>(null);
-  const passwordRef = useRef<any>(null);
-  const confirmPasswordRef = useRef<any>(null);
-
-  // read action only, prevents this screen re-rendering on every auth state change.
   const signUp = useAuthStore((s) => s.signUp);
 
-  const validate = (): boolean => {
-    if (!name.trim()) {
-      toast.error("Full name is required");
-      return false;
-    }
-    if (name.trim().length < 2) {
-      toast.error("Name must be at least 2 characters");
-      return false;
-    }
-    if (!email.trim()) {
-      toast.error("Email is required");
-      return false;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      toast.error("Please enter a valid email");
-      return false;
-    }
-    if (!password) {
-      toast.error("Password is required");
-      return false;
-    }
-    if (password.length < 8) {
-      toast.error("Password must be at least 8 characters");
-      return false;
-    }
-    if (!confirmPassword) {
-      toast.error("Please confirm your password");
-      return false;
-    }
-    if (confirmPassword !== password) {
-      toast.error("Passwords do not match");
-      return false;
-    }
-    return true;
-  };
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleSubmit = async () => {
-    if (!validate()) return;
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
+  });
 
-    setIsLoading(true);
+  const onSubmit = async (data: RegisterFormData) => {
+    const { name, email, password } = data;
 
-    // signUp handles: account.create → createEmailPasswordSession → account.get and sets user + isAuthenticated in the store on success.
-    const error = await signUp(name.trim(), email.trim(), password);
-
-    setIsLoading(false);
+    const error = await signUp(name, email, password);
 
     if (error) {
       toast.error(error);
@@ -85,7 +74,6 @@ export default function RegisterScreen() {
     }
 
     toast.success("Welcome to CloudNest! 🎉");
-
     router.replace("/(protected)/(tabs)/home");
   };
 
@@ -99,92 +87,144 @@ export default function RegisterScreen() {
         translucent
         backgroundColor="transparent"
       />
+
       <View className="flex-1 p-7 justify-center">
         <Image
           source={require("../../assets/images/icon.png")}
-          className="w-16 mx-auto mb-4"
-          style={{ height: undefined, aspectRatio: 1 }}
+          style={{
+            width: 110,
+            height: 110,
+            alignSelf: "center",
+            marginBottom: 6,
+          }}
         />
+
         <Text style={styles.heading}>
           Create Account{"\n"}
           <Text style={styles.subHeading}>Build your private cloud vault</Text>
         </Text>
 
-        <TextInput
-          label="Full Name"
-          placeholder="John Doe"
-          value={name}
-          onChangeText={setName}
-          autoCapitalize="words"
-          keyboardType="default"
-          mode="outlined"
-          autoComplete="name"
-          returnKeyType="next"
-          onSubmitEditing={() => emailRef.current?.focus()}
-          style={styles.input}
-        />
-
-        <TextInput
-          ref={emailRef}
-          label="Email"
-          placeholder="johndoe@gmail.com"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          mode="outlined"
-          autoComplete="email"
-          returnKeyType="next"
-          onSubmitEditing={() => passwordRef.current?.focus()}
-          style={styles.input}
-        />
-
-        <TextInput
-          ref={passwordRef}
-          label="Password"
-          value={password}
-          onChangeText={setPassword}
-          autoComplete="new-password"
-          autoCapitalize="none"
-          secureTextEntry={!showPassword}
-          mode="outlined"
-          style={styles.input}
-          returnKeyType="next"
-          onSubmitEditing={() => confirmPasswordRef.current?.focus()}
-          right={
-            <TextInput.Icon
-              icon={showPassword ? "eye-off" : "eye"}
-              onPress={() => setShowPassword((prev) => !prev)}
+        <Controller
+          control={control}
+          name="name"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              label="Full Name"
+              placeholder="John Doe"
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              autoCapitalize="words"
+              keyboardType="default"
+              mode="outlined"
+              autoComplete="name"
+              returnKeyType="next"
+              style={styles.input}
+              error={!!errors.name}
             />
-          }
+          )}
         />
+        {errors.name && (
+          <Text className="text-red-500 text-[12px] mb-2">
+            {errors.name.message}
+          </Text>
+        )}
 
-        <TextInput
-          ref={confirmPasswordRef}
-          label="Confirm Password"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          autoComplete="new-password"
-          autoCapitalize="none"
-          secureTextEntry={!showConfirmPassword}
-          style={styles.input}
-          mode="outlined"
-          returnKeyType="done"
-          onSubmitEditing={handleSubmit}
-          right={
-            <TextInput.Icon
-              icon={showConfirmPassword ? "eye-off" : "eye"}
-              onPress={() => setShowConfirmPassword((prev) => !prev)}
+        <Controller
+          control={control}
+          name="email"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              label="Email"
+              placeholder="johndoe@gmail.com"
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              mode="outlined"
+              autoComplete="email"
+              returnKeyType="next"
+              style={styles.input}
+              error={!!errors.email}
             />
-          }
+          )}
         />
+        {errors.email && (
+          <Text className="text-red-500 text-[12px] mb-2">
+            {errors.email.message}
+          </Text>
+        )}
+
+        <Controller
+          control={control}
+          name="password"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              label="Password"
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              autoComplete="new-password"
+              autoCapitalize="none"
+              secureTextEntry={!showPassword}
+              mode="outlined"
+              style={styles.input}
+              returnKeyType="next"
+              error={!!errors.password}
+              right={
+                <TextInput.Icon
+                  icon={showPassword ? "eye-off" : "eye"}
+                  onPress={() => setShowPassword(!showPassword)}
+                />
+              }
+            />
+          )}
+        />
+        {errors.password && (
+          <Text className="text-red-500 text-[12px] mb-2">
+            {errors.password.message}
+          </Text>
+        )}
+
+        <Controller
+          control={control}
+          name="confirmPassword"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              label="Confirm Password"
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              autoComplete="new-password"
+              autoCapitalize="none"
+              secureTextEntry={!showConfirmPassword}
+              mode="outlined"
+              style={styles.input}
+              returnKeyType="done"
+              onSubmitEditing={handleSubmit(onSubmit)}
+              error={!!errors.confirmPassword}
+              right={
+                <TextInput.Icon
+                  icon={showConfirmPassword ? "eye-off" : "eye"}
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                />
+              }
+            />
+          )}
+        />
+        {errors.confirmPassword && (
+          <Text className="text-red-500 text-[12px] mb-2">
+            {errors.confirmPassword.message}
+          </Text>
+        )}
 
         <Button
           title="Sign Up"
-          onPress={handleSubmit}
-          isLoading={isLoading}
-          disabled={isLoading}
-          variant="outline"
+          onPress={handleSubmit(onSubmit)}
+          isLoading={isSubmitting}
+          disabled={isSubmitting}
+          variant="primary"
           className="mt-6 rounded-[50px]"
         />
 
@@ -193,7 +233,7 @@ export default function RegisterScreen() {
             Already have an account?{" "}
           </Text>
           <Pressable onPress={() => router.push("/login")}>
-            <Text className="text-[#4ADE80] font-bold text-[14px]">Log in</Text>
+            <Text style={styles.loginText}>Log in</Text>
           </Pressable>
         </View>
       </View>
@@ -206,16 +246,21 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 12,
     fontSize: 24,
-    fontWeight: 500,
+    fontWeight: "500",
   },
   subHeading: {
     textAlign: "center",
     fontSize: 20,
     color: "black",
-    lineHeight: 24,
-    fontWeight: 500,
+    lineHeight: 26,
+    fontWeight: "500",
   },
   input: {
     marginBottom: 8,
+  },
+  loginText: {
+    color: "#14532D",
+    fontWeight: "bold",
+    fontSize: 14,
   },
 });

@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui";
 import { useAuthStore } from "@/stores/authStore";
 import { toast } from "@backpackapp-io/react-native-toast";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
-import { useRef, useState } from "react";
+import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import {
   Image,
   KeyboardAvoidingView,
@@ -13,47 +15,42 @@ import {
   View,
 } from "react-native";
 import { Text, TextInput } from "react-native-paper";
+import { z } from "zod";
+
+const loginSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email is required")
+    .email("Please enter a valid email"),
+  password: z
+    .string()
+    .min(1, "Password is required")
+    .min(8, "Password must be at least 8 characters"),
+});
+
+type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
   const router = useRouter();
-  const passwordRef = useRef<any>(null);
-
-  // reads directly from the store to avoid subscribing to the full state object and re-rendering this screen on every state change.
   const signIn = useAuthStore((s) => s.signIn);
 
-  const validate = (): boolean => {
-    if (!email.trim()) {
-      toast.error("Email is required");
-      return false;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      toast.error("Please enter a valid email");
-      return false;
-    }
-    if (!password) {
-      toast.error("Password is required");
-      return false;
-    }
-    if (password.length < 8) {
-      toast.error("Password must be at least 8 characters");
-      return false;
-    }
-    return true;
-  };
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = async () => {
-    if (!validate()) return;
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
 
-    setIsLoading(true);
-
-    const error = await signIn(email.trim(), password);
-
-    setIsLoading(false);
+  const onSubmit = async (data: LoginFormData) => {
+    const error = await signIn(data.email, data.password);
 
     if (error) {
       toast.error(error);
@@ -77,53 +74,82 @@ export default function LoginScreen() {
       <View className="flex-1 p-7 justify-center">
         <Image
           source={require("../../assets/images/icon.png")}
-          className="w-16 mx-auto mb-4"
-          style={{ height: undefined, aspectRatio: 1 }}
+          style={{
+            width: 110,
+            height: 110,
+            alignSelf: "center",
+            marginBottom: 8,
+          }}
         />
 
-        <Text style={styles.label}>
-          Welcome back{"\n"}Please login to continue
+        <Text style={styles.heading}>
+          Welcome back{"\n"}
+          <Text style={styles.subHeading}>Please login to continue</Text>
         </Text>
 
-        <TextInput
-          label="Email"
-          placeholder="johndoe@gmail.com"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          mode="outlined"
-          autoComplete="email"
-          returnKeyType="next"
-          onSubmitEditing={() => passwordRef.current?.focus()}
-          style={styles.input}
-        />
-
-        <TextInput
-          ref={passwordRef}
-          label="Password"
-          value={password}
-          onChangeText={setPassword}
-          autoCapitalize="none"
-          secureTextEntry={!showPassword}
-          mode="outlined"
-          returnKeyType="done"
-          onSubmitEditing={handleSubmit}
-          right={
-            <TextInput.Icon
-              icon={showPassword ? "eye-off" : "eye"}
-              onPress={() => setShowPassword((prev) => !prev)}
+        <Controller
+          control={control}
+          name="email"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              label="Email"
+              placeholder="johndoe@gmail.com"
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              mode="outlined"
+              autoComplete="email"
+              returnKeyType="next"
+              style={styles.input}
+              error={!!errors.email}
             />
-          }
-          style={{ marginBottom: 10 }}
+          )}
         />
+        {errors.email && (
+          <Text className="text-red-500 text-[12px] mb-2">
+            {errors.email.message}
+          </Text>
+        )}
+
+        <Controller
+          control={control}
+          name="password"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              label="Password"
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              autoCapitalize="none"
+              secureTextEntry={!showPassword}
+              mode="outlined"
+              returnKeyType="done"
+              onSubmitEditing={handleSubmit(onSubmit)}
+              style={styles.input}
+              error={!!errors.password}
+              right={
+                <TextInput.Icon
+                  icon={showPassword ? "eye-off" : "eye"}
+                  onPress={() => setShowPassword(!showPassword)}
+                />
+              }
+            />
+          )}
+        />
+        {errors.password && (
+          <Text className="text-red-500 text-[12px] mb-2">
+            {errors.password.message}
+          </Text>
+        )}
 
         <Button
           title="Login"
-          onPress={handleSubmit}
-          isLoading={isLoading}
-          disabled={isLoading}
-          variant="outline"
+          onPress={handleSubmit(onSubmit)}
+          isLoading={isSubmitting}
+          disabled={isSubmitting}
+          variant="primary"
           className="mt-6 rounded-[50px]"
         />
 
@@ -132,9 +158,7 @@ export default function LoginScreen() {
             Don&apos;t have an account?{" "}
           </Text>
           <Pressable onPress={() => router.push("/register")}>
-            <Text className="text-[#2d45d1] font-bold text-[14px]">
-              Sign Up
-            </Text>
+            <Text style={styles.signupText}>Sign Up</Text>
           </Pressable>
         </View>
       </View>
@@ -143,13 +167,25 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  label: {
+  heading: {
     textAlign: "center",
-    marginBottom: 10,
+    marginBottom: 12,
     fontSize: 24,
-    fontWeight: 500,
+    fontWeight: "500",
+  },
+  subHeading: {
+    textAlign: "center",
+    fontSize: 20,
+    color: "black",
+    lineHeight: 26,
+    fontWeight: "500",
   },
   input: {
     marginBottom: 8,
+  },
+  signupText: {
+    color: "#2d45d1",
+    fontWeight: "bold",
+    fontSize: 14,
   },
 });
