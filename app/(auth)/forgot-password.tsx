@@ -1,64 +1,54 @@
 import { Button } from "@/components/ui";
-import { useAuthStore } from "@/stores/authStore";
+import { account } from "@/lib/appwrite";
 import { toast } from "@backpackapp-io/react-native-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
-import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StatusBar,
-  StyleSheet,
-  View,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    StatusBar,
+    StyleSheet,
+    View,
 } from "react-native";
 import { Text, TextInput } from "react-native-paper";
 import { z } from "zod";
 
-const loginSchema = z.object({
+const forgotPasswordSchema = z.object({
   email: z
     .string()
     .trim()
     .min(1, "Email is required")
     .email("Please enter a valid email"),
-  password: z
-    .string()
-    .min(1, "Password is required")
-    .min(8, "Password must be at least 8 characters"),
 });
 
-type LoginFormData = z.infer<typeof loginSchema>;
+type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
 
-export default function LoginScreen() {
+export default function ForgotPasswordScreen() {
   const router = useRouter();
-  const signIn = useAuthStore((s) => s.signIn);
-
-  const [showPassword, setShowPassword] = useState(false);
 
   const {
     control,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+  } = useForm<ForgotPasswordFormData>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: { email: "" },
   });
 
-  const login = async (data: LoginFormData) => {
-    const error = await signIn(data.email, data.password);
-
-    if (error) {
-      toast.error(error);
-      return;
+  const onSubmit = async (data: ForgotPasswordFormData) => {
+    try {
+      await account.createRecovery(
+        data.email,
+        "cloudnest://auth?action=reset-password"
+      );
+      toast.success("Check your email to reset your password!");
+      router.replace("/(auth)/login");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to send recovery email");
     }
-
-    toast.success("Welcome back! 👋");
-    router.replace("/(protected)/(tabs)/home");
   };
 
   return (
@@ -83,8 +73,10 @@ export default function LoginScreen() {
         />
 
         <Text style={styles.heading}>
-          Welcome back{"\n"}
-          <Text style={styles.subHeading}>Please login to continue</Text>
+          Forgot Password?{"\n"}
+          <Text style={styles.subHeading}>
+            We&apos;ll send you a recovery link
+          </Text>
         </Text>
 
         <Controller
@@ -101,7 +93,8 @@ export default function LoginScreen() {
               keyboardType="email-address"
               mode="outlined"
               autoComplete="email"
-              returnKeyType="next"
+              returnKeyType="done"
+              onSubmitEditing={handleSubmit(onSubmit)}
               style={styles.input}
               error={!!errors.email}
             />
@@ -113,57 +106,24 @@ export default function LoginScreen() {
           </Text>
         )}
 
-        <Controller
-          control={control}
-          name="password"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              label="Password"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              autoCapitalize="none"
-              secureTextEntry={!showPassword}
-              mode="outlined"
-              returnKeyType="done"
-              onSubmitEditing={handleSubmit(login)}
-              style={styles.input}
-              error={!!errors.password}
-              right={
-                <TextInput.Icon
-                  icon={showPassword ? "eye-off" : "eye"}
-                  onPress={() => setShowPassword(!showPassword)}
-                />
-              }
-            />
-          )}
-        />
-        {errors.password && (
-          <Text className="text-red-500 text-[12px] mb-2">
-            {errors.password.message}
-          </Text>
-        )}
-        <Pressable onPress={() => router.push("/forgot-password")}>
-          <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-        </Pressable>
         <Button
-          title={isSubmitting ? "Logging in..." : "Login"}
-          onPress={handleSubmit(login)}
+          title={isSubmitting ? "Sending..." : "Send Recovery Email"}
+          onPress={handleSubmit(onSubmit)}
           isLoading={isSubmitting}
           disabled={isSubmitting}
           variant="primary"
           size="lg"
           className="mt-6"
           hideSpinner={true}
-          accessibilityLabel="Login button"
+          accessibilityLabel="Send Recovery Email button"
         />
 
         <View className="flex-row justify-center items-center mt-[18px]">
           <Text className="text-[rgba(255,255,255,0.55)] text-[14px]">
-            Don&apos;t have an account?{" "}
+            Remembered your password?{" "}
           </Text>
-          <Pressable onPress={() => router.push("/register")}>
-            <Text style={styles.signupText}>Sign Up</Text>
+          <Pressable onPress={() => router.push("/(auth)/login")}>
+            <Text style={styles.loginText}>Log in</Text>
           </Pressable>
         </View>
       </View>
@@ -188,13 +148,7 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: 8,
   },
-  forgotPasswordText: {
-    color: "#2d45d1",
-    fontWeight: "400",
-    fontSize: 14,
-    textAlign: "right",
-  },
-  signupText: {
+  loginText: {
     color: "#2d45d1",
     fontWeight: "bold",
     fontSize: 14,

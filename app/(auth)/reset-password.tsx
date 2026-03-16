@@ -1,16 +1,14 @@
 import { Button } from "@/components/ui";
 import { account } from "@/lib/appwrite";
-import { useAuthStore } from "@/stores/authStore";
 import { toast } from "@backpackapp-io/react-native-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
   Image,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   StatusBar,
   StyleSheet,
   View,
@@ -18,18 +16,8 @@ import {
 import { Text, TextInput } from "react-native-paper";
 import { z } from "zod";
 
-const registerSchema = z
+const resetPasswordSchema = z
   .object({
-    name: z
-      .string()
-      .trim()
-      .min(1, "Full name is required")
-      .min(2, "Name must be at least 2 characters"),
-    email: z
-      .string()
-      .trim()
-      .min(1, "Email is required")
-      .email("Please enter a valid email"),
     password: z
       .string()
       .min(1, "Password is required")
@@ -41,11 +29,14 @@ const registerSchema = z
     path: ["confirmPassword"],
   });
 
-type RegisterFormData = z.infer<typeof registerSchema>;
+type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
-export default function RegisterScreen() {
+export default function ResetPasswordScreen() {
   const router = useRouter();
-  const signUp = useAuthStore((s) => s.signUp);
+  const params = useLocalSearchParams();
+  
+  const userId = params.userId as string;
+  const secret = params.secret as string;
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -54,49 +45,36 @@ export default function RegisterScreen() {
     control,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<RegisterFormData>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-    },
+  } = useForm<ResetPasswordFormData>({
+    resolver: zodResolver(resetPasswordSchema),
+    defaultValues: { password: "", confirmPassword: "" },
   });
 
-  const onSignup = async (data: RegisterFormData) => {
-    const { name, email, password } = data;
-
-    const error = await signUp(name, email, password);
-
-    if (error) {
-      toast.error(error);
+  const onSubmit = async (data: ResetPasswordFormData) => {
+    if (!userId || !secret) {
+      toast.error("Invalid or missing recovery link parameters.");
       return;
     }
 
     try {
-      // Send verification email using the universal deep link scheme with query params
-      await account.createVerification("cloudnest://auth?action=verify-email");
-      toast.success("Check your email to verify your account!");
+      await account.updateRecovery(userId, secret, data.password);
+      toast.success("Password reset successfully! 🎉");
+      router.replace("/(auth)/login");
     } catch (err: any) {
-      toast.error(err.message || "Failed to send verification email");
+      toast.error(err.message || "Failed to reset password");
     }
-
-    toast.success("Welcome to CloudNest! 🎉");
-    router.replace("/(protected)/(tabs)/home");
   };
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className="flex-1 bg-background"
+      className="flex-1 justify-center p-6 bg-background"
     >
       <StatusBar
         barStyle="dark-content"
         translucent
         backgroundColor="transparent"
       />
-
       <View className="flex-1 p-7 justify-center">
         <Image
           source={require("../../assets/images/icon.png")}
@@ -109,68 +87,16 @@ export default function RegisterScreen() {
         />
 
         <Text style={styles.heading}>
-          Create Account{"\n"}
-          <Text style={styles.subHeading}>Build your private cloud vault</Text>
+          Reset Password{"\n"}
+          <Text style={styles.subHeading}>Choose a new secure password</Text>
         </Text>
-
-        <Controller
-          control={control}
-          name="name"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              label="Full Name"
-              placeholder="John Doe"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              autoCapitalize="words"
-              keyboardType="default"
-              mode="outlined"
-              autoComplete="name"
-              returnKeyType="next"
-              style={styles.input}
-              error={!!errors.name}
-            />
-          )}
-        />
-        {errors.name && (
-          <Text className="text-red-500 text-[12px] mb-2">
-            {errors.name.message}
-          </Text>
-        )}
-
-        <Controller
-          control={control}
-          name="email"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              label="Email"
-              placeholder="johndoe@gmail.com"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              mode="outlined"
-              autoComplete="email"
-              returnKeyType="next"
-              style={styles.input}
-              error={!!errors.email}
-            />
-          )}
-        />
-        {errors.email && (
-          <Text className="text-red-500 text-[12px] mb-2">
-            {errors.email.message}
-          </Text>
-        )}
 
         <Controller
           control={control}
           name="password"
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
-              label="Password"
+              label="New Password"
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
@@ -211,7 +137,7 @@ export default function RegisterScreen() {
               mode="outlined"
               style={styles.input}
               returnKeyType="done"
-              onSubmitEditing={handleSubmit(onSignup)}
+              onSubmitEditing={handleSubmit(onSubmit)}
               error={!!errors.confirmPassword}
               right={
                 <TextInput.Icon
@@ -229,25 +155,16 @@ export default function RegisterScreen() {
         )}
 
         <Button
-          title={isSubmitting ? "Signing Up..." : "Sign Up"}
-          onPress={handleSubmit(onSignup)}
+          title={isSubmitting ? "Resetting..." : "Reset Password"}
+          onPress={handleSubmit(onSubmit)}
           isLoading={isSubmitting}
           disabled={isSubmitting}
           variant="primary"
-          hideSpinner={true}
           size="lg"
           className="mt-6"
-          accessibilityLabel="Sign up button"
+          hideSpinner={true}
+          accessibilityLabel="Reset Password button"
         />
-
-        <View className="flex-row justify-center items-center mt-[18px]">
-          <Text className="text-[rgba(255,255,255,0.55)] text-[14px]">
-            Already have an account?{" "}
-          </Text>
-          <Pressable onPress={() => router.push("/login")}>
-            <Text style={styles.loginText}>Log in</Text>
-          </Pressable>
-        </View>
       </View>
     </KeyboardAvoidingView>
   );
@@ -269,10 +186,5 @@ const styles = StyleSheet.create({
   },
   input: {
     marginBottom: 8,
-  },
-  loginText: {
-    color: "#14532D",
-    fontWeight: "bold",
-    fontSize: 14,
   },
 });
