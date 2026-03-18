@@ -9,11 +9,12 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StatusBar,
   StyleSheet,
-  View,
 } from "react-native";
 import { Text, TextInput } from "react-native-paper";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { z } from "zod";
 
 const resetPasswordSchema = z
@@ -34,7 +35,8 @@ type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 export default function ResetPasswordScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  
+  const insets = useSafeAreaInsets();
+
   const userId = params.userId as string;
   const secret = params.secret as string;
 
@@ -69,13 +71,24 @@ export default function ResetPasswordScreen() {
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       className="flex-1 justify-center p-6 bg-background"
+      keyboardVerticalOffset={insets.top}
     >
       <StatusBar
         barStyle="dark-content"
         translucent
         backgroundColor="transparent"
       />
-      <View className="flex-1 p-7 justify-center">
+      <ScrollView
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+          paddingHorizontal: 28,
+          justifyContent: "center",
+        }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <Image
           source={require("../../assets/images/icon.png")}
           style={{
@@ -165,7 +178,7 @@ export default function ResetPasswordScreen() {
           hideSpinner={true}
           accessibilityLabel="Reset Password button"
         />
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }

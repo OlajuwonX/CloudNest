@@ -5,15 +5,17 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
 import {
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    StatusBar,
-    StyleSheet,
-    View,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  View,
 } from "react-native";
 import { Text, TextInput } from "react-native-paper";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { z } from "zod";
 
 const forgotPasswordSchema = z.object({
@@ -28,6 +30,7 @@ type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const {
     control,
@@ -61,7 +64,16 @@ export default function ForgotPasswordScreen() {
         translucent
         backgroundColor="transparent"
       />
-      <View className="flex-1 p-7 justify-center">
+      <ScrollView
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+          paddingHorizontal: 28,
+          justifyContent: "center",
+        }}
+        keyboardShouldPersistTaps="handled"
+      >
         <Image
           source={require("../../assets/images/icon.png")}
           style={{
@@ -126,7 +138,7 @@ export default function ForgotPasswordScreen() {
             <Text style={styles.loginText}>Log in</Text>
           </Pressable>
         </View>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }

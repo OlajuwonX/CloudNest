@@ -3,6 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
 import { Animated, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const GRADIENT_HOLD = 800;
 const LOGO_FADE_IN = 600;
@@ -11,7 +12,7 @@ const LOGO_FADE_OUT = 400;
 
 export default function SplashScreen1() {
   const router = useRouter();
-
+  const insets = useSafeAreaInsets();
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const logoScale = useRef(new Animated.Value(0.8)).current;
 
@@ -65,7 +66,10 @@ export default function SplashScreen1() {
       colors={["#14532D", "#166534", "#16A34A", "#4ADE80"]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      style={styles.container}
+      style={[
+        styles.container,
+        { paddingTop: insets.top, paddingBottom: insets.bottom },
+      ]}
     >
       <View style={styles.logoWrapper}>
         <Animated.Image

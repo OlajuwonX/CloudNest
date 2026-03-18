@@ -10,11 +10,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StatusBar,
   StyleSheet,
   View,
 } from "react-native";
 import { Text, TextInput } from "react-native-paper";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -34,6 +36,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export default function LoginScreen() {
   const router = useRouter();
   const signIn = useAuthStore((s) => s.signIn);
+  const insets = useSafeAreaInsets();
 
   const [showPassword, setShowPassword] = useState(false);
 
@@ -66,13 +69,24 @@ export default function LoginScreen() {
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       className="flex-1 justify-center p-6 bg-background"
+      keyboardVerticalOffset={insets.top}
     >
       <StatusBar
         barStyle="dark-content"
         translucent
         backgroundColor="transparent"
       />
-      <View className="flex-1 p-7 justify-center">
+      <ScrollView
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+          paddingHorizontal: 28,
+          justifyContent: "center",
+        }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <Image
           source={require("../../assets/images/icon.png")}
           style={{
@@ -167,7 +181,7 @@ export default function LoginScreen() {
             <Text style={styles.signupText}>Sign Up</Text>
           </Pressable>
         </View>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }

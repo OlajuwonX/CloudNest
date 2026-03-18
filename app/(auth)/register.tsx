@@ -11,11 +11,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StatusBar,
   StyleSheet,
   View,
 } from "react-native";
 import { Text, TextInput } from "react-native-paper";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { z } from "zod";
 
 const registerSchema = z
@@ -46,6 +48,7 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 export default function RegisterScreen() {
   const router = useRouter();
   const signUp = useAuthStore((s) => s.signUp);
+  const insets = useSafeAreaInsets();
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -93,6 +96,7 @@ export default function RegisterScreen() {
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       className="flex-1 bg-background"
+      keyboardVerticalOffset={insets.top}
     >
       <StatusBar
         barStyle="dark-content"
@@ -100,7 +104,17 @@ export default function RegisterScreen() {
         backgroundColor="transparent"
       />
 
-      <View className="flex-1 p-7 justify-center">
+      <ScrollView
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+          paddingHorizontal: 28,
+          justifyContent: "center",
+        }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <Image
           source={require("../../assets/images/icon.png")}
           style={{
@@ -253,7 +267,7 @@ export default function RegisterScreen() {
             <Text style={styles.loginText}>Log in</Text>
           </Pressable>
         </View>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }

@@ -2,11 +2,13 @@ import { account } from "@/lib/appwrite";
 import { toast } from "@backpackapp-io/react-native-toast";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect } from "react";
-import { Text, View } from "react-native";
+import { StatusBar, Text, View } from "react-native";
 import { ActivityIndicator } from "react-native-paper";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function VerifyEmailScreen() {
   const params = useLocalSearchParams();
+  const insets = useSafeAreaInsets();
   const userId = params.userId as string;
   const secret = params.secret as string;
   const router = useRouter();
@@ -34,7 +36,18 @@ export default function VerifyEmailScreen() {
   }, [userId, secret, router]);
 
   return (
-    <View className="flex-1 justify-center items-center bg-[#F8FAFC]">
+    <View
+      className="flex-1 justify-center items-center bg-[#F8FAFC]"
+      style={{
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+      }}
+    >
+      <StatusBar
+        barStyle="dark-content"
+        translucent
+        backgroundColor="transparent"
+      />
       <ActivityIndicator
         size="large"
         color="#14532D"

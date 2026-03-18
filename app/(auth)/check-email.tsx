@@ -4,11 +4,13 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Image, StyleSheet, View } from "react-native";
 import { ActivityIndicator, Button, Text } from "react-native-paper";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function CheckEmailScreen() {
   const router = useRouter();
   const [resending, setResending] = useState(false);
   const [checking, setChecking] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const handleContinue = async () => {
     setChecking(true);
@@ -43,7 +45,10 @@ export default function CheckEmailScreen() {
   };
 
   return (
-    <View className="flex-1 justify-center items-center bg-[#F8FAFC] px-8">
+    <View
+      className="flex-1 justify-center items-center bg-[#F8FAFC] px-8"
+      style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
+    >
       <Image
         source={require("../../assets/images/icon.png")}
         style={styles.logo}

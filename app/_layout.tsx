@@ -4,6 +4,7 @@ import { Stack } from "expo-router";
 import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { MD3LightTheme, PaperProvider } from "react-native-paper";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import "./global.css";
 
 // ─── react-native-paper theme ──── //
@@ -30,12 +31,14 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <PaperProvider theme={paperTheme}>
-        <Stack screenOptions={{ headerShown: false }} />
+      <SafeAreaProvider>
+        <PaperProvider theme={paperTheme}>
+          <Stack screenOptions={{ headerShown: false }} />
 
-        {/* Global toast renderer */}
-        <Toasts defaultPosition={ToastPosition.TOP} defaultDuration={3000} />
-      </PaperProvider>
+          {/* Global toast renderer */}
+          <Toasts defaultPosition={ToastPosition.TOP} defaultDuration={3000} />
+        </PaperProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
