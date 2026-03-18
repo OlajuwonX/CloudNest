@@ -25,3 +25,14 @@ export const databases = new Databases(client);
 export const storage = new Storage(client);
 
 export default client;
+
+// appwrite Email Verification & Password Reset Setup
+// 1. create separate platforms in Appwrite for mobile deep links:
+//    - CloudNest (main app)
+//    - verify-email (deep link for email verification)
+//    - reset-password (deep link for password reset)
+// 2. each platform uses the same Android package identifier: co.phantomdev.cloudnest
+// 3. custom URI schemes (cloudnest://verify-email, cloudnest://reset-password) are used
+//    for mobile deep linking instead of web URLs.
+// 4. App now listens to these deep links to navigate to the appropriate screens.
+// 5. This setup resolves the "Invalid 'url' param" errors and works on the free tier.

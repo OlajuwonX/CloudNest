@@ -40,6 +40,7 @@ export default function LoginScreen() {
   const {
     control,
     handleSubmit,
+    setFocus,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -90,34 +91,36 @@ export default function LoginScreen() {
         <Controller
           control={control}
           name="email"
-          render={({ field: { onChange, onBlur, value } }) => (
+          render={({ field: { onChange, onBlur, value, ref } }) => (
             <TextInput
+              ref={ref}
               label="Email"
               placeholder="johndoe@gmail.com"
               value={value}
               onChangeText={onChange}
+              blurOnSubmit={false}
               onBlur={onBlur}
               autoCapitalize="none"
               keyboardType="email-address"
               mode="outlined"
               autoComplete="email"
               returnKeyType="next"
+              onSubmitEditing={() => setFocus("password")}
               style={styles.input}
               error={!!errors.email}
             />
           )}
         />
         {errors.email && (
-          <Text className="text-red-500 text-[12px] mb-2">
-            {errors.email.message}
-          </Text>
+          <Text style={styles.errorText}>{errors.email.message}</Text>
         )}
 
         <Controller
           control={control}
           name="password"
-          render={({ field: { onChange, onBlur, value } }) => (
+          render={({ field: { onChange, onBlur, value, ref } }) => (
             <TextInput
+              ref={ref}
               label="Password"
               value={value}
               onChangeText={onChange}
@@ -139,9 +142,7 @@ export default function LoginScreen() {
           )}
         />
         {errors.password && (
-          <Text className="text-red-500 text-[12px] mb-2">
-            {errors.password.message}
-          </Text>
+          <Text style={styles.errorText}>{errors.password.message}</Text>
         )}
         <Pressable onPress={() => router.push("/forgot-password")}>
           <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
@@ -199,4 +200,13 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 14,
   },
+  errorText: {
+    color: "red",
+    fontSize: 12,
+    marginBottom: 8,
+  },
 });
+
+// instead of using useRef to set keyboard focus on inputs as used before
+// use react hook forms setFocus to set the focus to each inputs.
+// Then pass the ref into the controller and then into the inputs.

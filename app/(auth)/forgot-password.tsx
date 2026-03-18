@@ -42,7 +42,7 @@ export default function ForgotPasswordScreen() {
     try {
       await account.createRecovery(
         data.email,
-        "cloudnest://auth?action=reset-password",
+        "https://cloudnest-auth-bridge.vercel.app/auth?action=reset-password",
       );
       toast.success("Check your email to reset your password!");
       router.replace("/(auth)/login");

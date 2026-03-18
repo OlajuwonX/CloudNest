@@ -53,6 +53,7 @@ export default function RegisterScreen() {
   const {
     control,
     handleSubmit,
+    setFocus,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -76,14 +77,16 @@ export default function RegisterScreen() {
 
     try {
       // Send verification email using the universal deep link scheme with query params
-      await account.createVerification("cloudnest://auth?action=verify-email");
+      await account.createVerification(
+        "https://cloudnest-auth-bridge.vercel.app/auth?action=verify-email",
+      );
       toast.success("Check your email to verify your account!");
     } catch (err: any) {
       toast.error(err.message || "Failed to send verification email");
     }
 
     toast.success("Welcome to CloudNest! 🎉");
-    router.replace("/(protected)/(tabs)/home");
+    router.replace("/(auth)/check-email");
   };
 
   return (
@@ -116,70 +119,75 @@ export default function RegisterScreen() {
         <Controller
           control={control}
           name="name"
-          render={({ field: { onChange, onBlur, value } }) => (
+          render={({ field: { onChange, onBlur, value, ref } }) => (
             <TextInput
+              ref={ref}
               label="Full Name"
               placeholder="John Doe"
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
+              blurOnSubmit={false}
               autoCapitalize="words"
               keyboardType="default"
               mode="outlined"
               autoComplete="name"
               returnKeyType="next"
+              onSubmitEditing={() => setFocus("email")}
               style={styles.input}
               error={!!errors.name}
             />
           )}
         />
         {errors.name && (
-          <Text className="text-red-500 text-[12px] mb-2">
-            {errors.name.message}
-          </Text>
+          <Text style={styles.errorText}>{errors.name.message}</Text>
         )}
 
         <Controller
           control={control}
           name="email"
-          render={({ field: { onChange, onBlur, value } }) => (
+          render={({ field: { onChange, onBlur, value, ref } }) => (
             <TextInput
+              ref={ref}
               label="Email"
               placeholder="johndoe@gmail.com"
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
+              blurOnSubmit={false}
               autoCapitalize="none"
               keyboardType="email-address"
               mode="outlined"
               autoComplete="email"
               returnKeyType="next"
+              onSubmitEditing={() => setFocus("password")}
               style={styles.input}
               error={!!errors.email}
             />
           )}
         />
         {errors.email && (
-          <Text className="text-red-500 text-[12px] mb-2">
-            {errors.email.message}
-          </Text>
+          <Text style={styles.errorText}>{errors.email.message}</Text>
         )}
 
         <Controller
           control={control}
           name="password"
-          render={({ field: { onChange, onBlur, value } }) => (
+          render={({ field: { onChange, onBlur, value, ref } }) => (
             <TextInput
+              ref={ref}
               label="Password"
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
+              blurOnSubmit={false}
               autoComplete="new-password"
               autoCapitalize="none"
               secureTextEntry={!showPassword}
               mode="outlined"
               style={styles.input}
               returnKeyType="next"
+              onSubmitEditing={() => setFocus("confirmPassword")}
               error={!!errors.password}
               right={
                 <TextInput.Icon
@@ -191,16 +199,15 @@ export default function RegisterScreen() {
           )}
         />
         {errors.password && (
-          <Text className="text-red-500 text-[12px] mb-2">
-            {errors.password.message}
-          </Text>
+          <Text style={styles.errorText}>{errors.password.message}</Text>
         )}
 
         <Controller
           control={control}
           name="confirmPassword"
-          render={({ field: { onChange, onBlur, value } }) => (
+          render={({ field: { onChange, onBlur, value, ref } }) => (
             <TextInput
+              ref={ref}
               label="Confirm Password"
               value={value}
               onChangeText={onChange}
@@ -223,9 +230,7 @@ export default function RegisterScreen() {
           )}
         />
         {errors.confirmPassword && (
-          <Text className="text-red-500 text-[12px] mb-2">
-            {errors.confirmPassword.message}
-          </Text>
+          <Text style={styles.errorText}>{errors.confirmPassword.message}</Text>
         )}
 
         <Button
@@ -270,9 +275,18 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: 8,
   },
+  errorText: {
+    color: "red",
+    fontSize: 12,
+    marginBottom: 8,
+  },
   loginText: {
     color: "#14532D",
     fontWeight: "bold",
     fontSize: 14,
   },
 });
+
+// instead of using useRef to set keyboard focus on inputs as used before
+// use react hook forms setFocus to set the focus to each inputs.
+// then pass the ref into the controller and then into the inputs.

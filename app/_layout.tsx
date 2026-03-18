@@ -11,13 +11,13 @@ const paperTheme = {
   ...MD3LightTheme,
   colors: {
     ...MD3LightTheme.colors,
-    primary: "#14532D", // dark green
-    secondary: "#1E3A8A", // dark blue
-    error: "#DC2626", // danger red
+    primary: "#14532D",
+    secondary: "#1E3A8A",
+    error: "#DC2626",
     background: "#F8FAFC",
     surface: "#FFFFFF",
-    outline: "#E5E7EB", // resting input border
-    onSurfaceVariant: "#6B7280", // placeholder & floating label colour
+    outline: "#E5E7EB",
+    onSurfaceVariant: "#6B7280",
   },
 };
 
@@ -41,7 +41,6 @@ export default function RootLayout() {
 }
 
 // ── Session restore (checkSession) ── //
-
 // runs once on mount. calls Appwrite account.get() to check if a
 // valid session cookie already exists. The result populates isAuthenticated
 // in the store, which is read by index.tsx to decide where to redirect the user.
