@@ -87,7 +87,6 @@ export default function RegisterScreen() {
     } catch (err: any) {
       toast.error(err.message || "Failed to send verification email");
     }
-
     toast.success("Welcome to CloudNest! 🎉");
     router.replace("/(auth)/check-email");
   };
