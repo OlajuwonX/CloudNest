@@ -29,8 +29,8 @@ const textVariant: Record<ButtonVariant, string> = {
 };
 
 const containerSize: Record<ButtonSize, string> = {
-  sm: "px-4 py-2 rounded-lg",
-  md: "px-5 py-3.5 rounded-xl",
+  sm: "px-4 py-2 rounded-2xl",
+  md: "px-5 py-3.5 rounded-3xl",
   lg: "px-6 py-4 rounded-[40px]",
 };
 

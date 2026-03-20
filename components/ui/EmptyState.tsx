@@ -4,13 +4,10 @@ import { Text, View } from "react-native";
 
 import Button from "./Button";
 
-// ─── Props ─── //
-
 interface EmptyStateProps {
   icon: keyof typeof Feather.glyphMap;
   title: string;
   subtitle?: string;
-  /** optional CTA button label */
   actionLabel?: string;
   onAction?: () => void;
   className?: string;
@@ -29,7 +26,7 @@ export default function EmptyState({
       className={`flex-1 items-center justify-center px-8 py-12 ${className}`}
     >
       {/* icon circle */}
-      <View className="w-24 h-24 rounded-full bg-accent-light items-center justify-center mb-6">
+      <View className="w-24 h-24 rounded-full bg-[#9bf4bb36] items-center justify-center mb-6">
         <Feather name={icon} size={40} color="#14532D" />
       </View>
 
