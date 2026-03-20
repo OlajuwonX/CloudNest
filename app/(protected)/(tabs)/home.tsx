@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   RefreshControl,
   ScrollView,
+  StatusBar,
   Text,
   TouchableOpacity,
   View,
@@ -91,6 +92,11 @@ export default function HomeScreen() {
           />
         }
       >
+        <StatusBar
+          barStyle="dark-content"
+          translucent
+          backgroundColor="transparent"
+        />
         <View className="flex-row justify-between items-center px-5 pt-4">
           <View>
             <Text className="text-xl font-semibold text-text">

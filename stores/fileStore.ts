@@ -3,8 +3,8 @@ import type { FileItem, StorageBreakdown } from "@/types";
 import { Query } from "react-native-appwrite";
 import { create } from "zustand";
 
-const DB_ID = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID ?? "";
-const FILES_TABLE_ID = process.env.EXPO_PUBLIC_APPWRITE_FILES_TABLE_ID ?? "";
+const DB_ID = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID!;
+const FILES_TABLE_ID = process.env.EXPO_PUBLIC_APPWRITE_FILES_TABLE_ID!;
 
 interface FileStore {
   // the 5 most recently uploaded files shown on the home dashboard
