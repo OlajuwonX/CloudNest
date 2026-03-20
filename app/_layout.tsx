@@ -1,5 +1,6 @@
 import { useAuthStore } from "@/stores/authStore";
 import { ToastPosition, Toasts } from "@backpackapp-io/react-native-toast";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { Stack } from "expo-router";
 import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -33,10 +34,17 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <PaperProvider theme={paperTheme}>
-          <Stack screenOptions={{ headerShown: false }} />
+          {/*
+           * BottomSheetModalProvider must wrap any screen that uses BottomSheetModal.
+           * It creates a shared portal that renders the sheet above all other content.
+           * Without this, calling ref.current.present() would silently do nothing.
+           */}
+          <BottomSheetModalProvider>
+            <Stack screenOptions={{ headerShown: false }} />
 
-          {/* Global toast renderer */}
-          <Toasts defaultPosition={ToastPosition.TOP} defaultDuration={3000} />
+            {/* Global toast renderer */}
+            <Toasts defaultPosition={ToastPosition.TOP} defaultDuration={3000} />
+          </BottomSheetModalProvider>
         </PaperProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

@@ -62,6 +62,46 @@ export function formatCurrentDate(): string {
   });
 }
 
+// split into date + time parts so we can insert "at" between them.
+export function formatFullDate(isoString: string): string {
+  const date = new Date(isoString);
+  const datePart = date.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+  const timePart = date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  return `${datePart} at ${timePart}`;
+}
+
+// returns a human-readable file type label from a MIME type string.
+// used in the file detail screen's info section.
+
+export function getReadableFileType(mimeType: string): string {
+  const map: Record<string, string> = {
+    "image/jpeg": "JPEG Image",
+    "image/jpg": "JPEG Image",
+    "image/png": "PNG Image",
+    "image/gif": "GIF Image",
+    "image/webp": "WebP Image",
+    "video/mp4": "MP4 Video",
+    "video/quicktime": "MOV Video",
+    "video/mpeg": "MPEG Video",
+    "application/pdf": "PDF Document",
+    "application/msword": "Word Document",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+      "Word Document",
+    "application/vnd.ms-excel": "Excel Spreadsheet",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+      "Excel Spreadsheet",
+    "text/plain": "Text File",
+  };
+  return map[mimeType] ?? mimeType.split("/")[1]?.toUpperCase() ?? "File";
+}
+
 // fileSizeConverter() Converts a raw byte count into a human-readable string.
 // How it works:
 // - we find which unit to use by dividing Math.log(bytes) by Math.log(1024).
