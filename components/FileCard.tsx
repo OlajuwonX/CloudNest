@@ -57,7 +57,7 @@ export default function FileCard({
             {file.fileName}
           </Text>
           <Text className="text-muted text-xs mt-0.5">
-            {formatFileSize(file.size)} · {formatDate(file.$createdAt)}
+            {formatFileSize(file.fileSize)} · {formatDate(file.$createdAt)}
           </Text>
         </View>
 
@@ -102,7 +102,7 @@ export default function FileCard({
           {file.fileName}
         </Text>
         <Text className="text-muted text-xs mt-0.5">
-          {formatFileSize(file.size)}
+          {formatFileSize(file.fileSize)}
         </Text>
       </View>
     </TouchableOpacity>

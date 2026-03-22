@@ -75,11 +75,11 @@ export const useFileStore = create<FileStore>((set) => ({
         total = 0;
 
       for (const file of files) {
-        total += file.size;
-        if (file.category === "image") images += file.size;
-        else if (file.category === "video") videos += file.size;
-        else if (file.category === "document") documents += file.size;
-        else others += file.size;
+        total += file.fileSize;
+        if (file.category === "image") images += file.fileSize;
+        else if (file.category === "video") videos += file.fileSize;
+        else if (file.category === "document") documents += file.fileSize;
+        else others += file.fileSize;
       }
 
       set({

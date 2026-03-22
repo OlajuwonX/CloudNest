@@ -120,7 +120,7 @@ export default function FileActionSheet({
               {file.fileName}
             </Text>
             <Text className="text-xs text-muted mt-0.5">
-              {formatFileSize(file.size)} · {file.category}
+              {formatFileSize(file.fileSize)} · {file.category}
             </Text>
           </View>
         )}

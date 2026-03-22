@@ -7,9 +7,9 @@ export interface FileItem {
   $createdAt: string;
   userId: string;
   fileName: string;
-  type: string; // MIME type e.g. "image/png", "application/pdf"
+  fileType: string; // MIME type e.g. "image/png", "application/pdf"
   category: FileCategory;
-  size: number; // in bytes
+  fileSize: number; // in bytes
   storageFileId: string;
 }
 

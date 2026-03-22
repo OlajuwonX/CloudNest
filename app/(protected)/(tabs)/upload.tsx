@@ -198,9 +198,9 @@ export default function UploadScreen() {
           data: {
             userId: user.$id,
             fileName: item.file.name,
-            type: item.file.mimeType,
+            fileType: item.file.mimeType,
             category: getFileCategory(item.file.mimeType),
-            size: item.file.size,
+            fileSize: item.file.size,
             storageFileId: storageFile.$id,
           },
         });

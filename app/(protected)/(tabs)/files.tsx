@@ -49,7 +49,7 @@ function buildQueries(
       queries.push(Query.orderAsc("$createdAt"));
       break;
     case "largest":
-      queries.push(Query.orderDesc("size"));
+      queries.push(Query.orderDesc("fileSize"));
       break;
     case "name":
       queries.push(Query.orderAsc("fileName"));

@@ -206,8 +206,8 @@ export default function FileDetailScreen() {
             File Info
           </Text>
 
-          <InfoRow label="Type" value={getReadableFileType(file.type)} />
-          <InfoRow label="Size" value={formatFileSize(file.size)} />
+          <InfoRow label="Type" value={getReadableFileType(file.fileType)} />
+          <InfoRow label="Size" value={formatFileSize(file.fileSize)} />
           <InfoRow label="Uploaded" value={formatFullDate(file.$createdAt)} />
           <InfoRow label="Category" value={file.category} capitalize />
         </View>
@@ -261,7 +261,7 @@ function PreviewArea({
     );
   }
 
-  if (file.type === "application/pdf") {
+  if (file.fileType === "application/pdf") {
     return (
       <View
         className="w-full bg-neutral-100 items-center justify-center gap-3"
