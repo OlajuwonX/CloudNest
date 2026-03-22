@@ -197,7 +197,7 @@ export default function UploadScreen() {
           documentId: ID.unique(),
           data: {
             userId: user.$id,
-            name: item.file.name,
+            fileName: item.file.name,
             type: item.file.mimeType,
             category: getFileCategory(item.file.mimeType),
             size: item.file.size,
@@ -359,7 +359,10 @@ function FilePreviewCard({
         : "#14532D";
 
   return (
-    <View className="w-24" style={{ position: "relative" }}>
+    <View
+      className="w-24"
+      style={{ position: "relative", overflow: "visible" }}
+    >
       <View className="w-24 h-24 rounded-xl overflow-hidden bg-border items-center justify-center">
         {isImage ? (
           <Image
@@ -412,8 +415,8 @@ function FilePreviewCard({
           onPress={onRemove}
           style={{
             position: "absolute",
-            top: -6,
-            right: -6,
+            top: 0,
+            right: -4,
             backgroundColor: "#DC2626",
             borderRadius: 10,
             width: 20,

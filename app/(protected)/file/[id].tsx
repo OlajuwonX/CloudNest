@@ -76,7 +76,7 @@ export default function FileDetailScreen() {
       toast.loading("Downloading…");
       const localFile = await File.downloadFileAsync(
         fileDownloadUrl,
-        new File(Paths.document, file.name),
+        new File(Paths.document, file.fileName),
       );
       toast.dismiss();
 
@@ -104,7 +104,7 @@ export default function FileDetailScreen() {
       toast.loading("Preparing…");
       const localFile = await File.downloadFileAsync(
         fileDownloadUrl,
-        new File(Paths.document, file.name),
+        new File(Paths.document, file.fileName),
       );
       toast.dismiss();
       await Sharing.shareAsync(localFile.uri);
@@ -179,7 +179,7 @@ export default function FileDetailScreen() {
           className="flex-1 text-base font-semibold text-text"
           numberOfLines={1}
         >
-          {file.name}
+          {file.fileName}
         </Text>
         <TouchableOpacity onPress={handleDelete} className="ml-3">
           <Feather name="trash-2" size={20} color="#DC2626" />
@@ -282,7 +282,7 @@ function PreviewArea({
       style={{ height: 280 }}
     >
       <Feather name="file" size={64} color="#6B7280" />
-      <Text className="text-base font-semibold text-text">{file.name}</Text>
+      <Text className="text-base font-semibold text-text">{file.fileName}</Text>
       <Text className="text-sm text-muted">
         Preview not available for this file type
       </Text>

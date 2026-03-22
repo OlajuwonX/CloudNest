@@ -6,7 +6,7 @@ export interface FileItem {
   $id: string;
   $createdAt: string;
   userId: string;
-  name: string;
+  fileName: string;
   type: string; // MIME type e.g. "image/png", "application/pdf"
   category: FileCategory;
   size: number; // in bytes

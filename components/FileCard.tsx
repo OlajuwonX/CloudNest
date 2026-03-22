@@ -54,7 +54,7 @@ export default function FileCard({
 
         <View className="flex-1">
           <Text className="text-text font-medium text-sm" numberOfLines={1}>
-            {file.name}
+            {file.fileName}
           </Text>
           <Text className="text-muted text-xs mt-0.5">
             {formatFileSize(file.size)} · {formatDate(file.$createdAt)}
@@ -99,7 +99,7 @@ export default function FileCard({
 
       <View className="px-2.5 py-2">
         <Text className="text-text text-xs font-medium" numberOfLines={1}>
-          {file.name}
+          {file.fileName}
         </Text>
         <Text className="text-muted text-xs mt-0.5">
           {formatFileSize(file.size)}

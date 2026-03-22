@@ -52,7 +52,7 @@ function buildQueries(
       queries.push(Query.orderDesc("size"));
       break;
     case "name":
-      queries.push(Query.orderAsc("name"));
+      queries.push(Query.orderAsc("fileName"));
       break;
   }
 
@@ -157,7 +157,7 @@ export default function FilesScreen() {
 
       const localFile = await File.downloadFileAsync(
         url,
-        new File(Paths.document, file.name),
+        new File(Paths.document, file.fileName),
       );
       toast.dismiss();
       await Sharing.shareAsync(localFile.uri);
@@ -173,18 +173,18 @@ export default function FilesScreen() {
       "Rename File",
       "Enter a new name",
       async (newName) => {
-        if (!newName?.trim() || newName.trim() === file.name) return;
+        if (!newName?.trim() || newName.trim() === file.fileName) return;
         try {
           await databases.updateDocument({
             databaseId: DB_ID,
             collectionId: FILES_TABLE_ID,
             documentId: file.$id,
-            data: { name: newName.trim() },
+            data: { fileName: newName.trim() },
           });
           // optimistic update: update local state immediately instead of refetching
           setFiles((prev) =>
             prev.map((f) =>
-              f.$id === file.$id ? { ...f, name: newName.trim() } : f,
+              f.$id === file.$id ? { ...f, fileName: newName.trim() } : f,
             ),
           );
           toast.success("File renamed");
@@ -193,7 +193,7 @@ export default function FilesScreen() {
         }
       },
       "plain-text",
-      file.name,
+      file.fileName,
     );
   };
 
