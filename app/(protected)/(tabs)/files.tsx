@@ -68,7 +68,8 @@ export default function FilesScreen() {
   }, [refetch]);
 
   const handleApplyFilter = (opts: FilterOptions) => {
-    // Changing filter changes the queryKey, so React Query automatically fetches the new filtered/sorted list.
+    setFilter(opts);
+    setFilterVisible(false);
   };
 
   const handleDownload = async (file: FileItem) => {
