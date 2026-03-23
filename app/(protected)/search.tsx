@@ -120,7 +120,7 @@ export default function SearchScreen() {
           <Feather name="arrow-left" size={22} color="#374151" />
         </TouchableOpacity>
 
-        <View className="flex-1 flex-row items-center bg-background rounded-xl px-3 py-2 gap-2 border border-border">
+        <View className="flex-1 flex-row items-center bg-background rounded-3xl px-3 py-1 gap-2 border border-border">
           <Feather name="search" size={18} color="#6B7280" />
           <TextInput
             ref={inputRef}
@@ -132,15 +132,17 @@ export default function SearchScreen() {
             returnKeyType="search"
             autoCorrect={false}
             autoCapitalize="none"
-            className="flex-1 text-sm text-text"
-            style={{ paddingVertical: 0 }}
+            className="flex-1 text-[18px] text-text"
+            style={{
+              height: 28,
+            }}
           />
           {rawQuery.length > 0 && (
             <TouchableOpacity
               onPress={() => setRawQuery("")}
               hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
             >
-              <Feather name="x-circle" size={16} color="#9CA3AF" />
+              <Feather name="x-circle" size={18} color="#9CA3AF" />
             </TouchableOpacity>
           )}
         </View>
@@ -150,11 +152,11 @@ export default function SearchScreen() {
         <LoadingSkeleton variant="list-item" count={5} />
       ) : showIdle ? (
         <View className="flex-1 items-center justify-center gap-4">
-          <View className="w-20 h-20 rounded-full bg-gray-100 items-center justify-center">
-            <Feather name="search" size={32} color="#9CA3AF" />
+          <View className="w-24 h-24 rounded-full bg-[#9bf4bb36] items-center justify-center">
+            <Feather name="search" size={40} color="#14532D" />
           </View>
           <View className="items-center gap-1">
-            <Text className="text-base font-semibold text-text">
+            <Text className="text-xl font-bold text-text">
               Search your files
             </Text>
             <Text className="text-sm text-muted">
