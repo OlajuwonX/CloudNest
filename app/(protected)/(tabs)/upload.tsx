@@ -17,8 +17,11 @@ import {
 import { ID } from "react-native-appwrite";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useQueryClient } from "@tanstack/react-query";
+
 import { Button } from "@/components/ui";
 import { databases, storage } from "@/lib/appwrite";
+import { fileKeys } from "@/lib/queries";
 import { getFileCategory } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
 import type { SelectedFile, UploadItem } from "@/types";
@@ -53,6 +56,7 @@ const SOURCE_OPTIONS = [
 
 export default function UploadScreen() {
   const user = useAuthStore((s) => s.user);
+  const queryClient = useQueryClient();
   const [uploadItems, setUploadItems] = useState<UploadItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSummary, setUploadSummary] = useState("");
@@ -226,6 +230,9 @@ export default function UploadScreen() {
       toast.success(
         `${successCount} file${successCount > 1 ? "s" : ""} uploaded successfully`,
       );
+      // invalidate all file queries so the home dashboard and files list
+      // both refetch automatically when the user navigates back to them.
+      await queryClient.invalidateQueries({ queryKey: fileKeys.all });
     }
 
     setIsUploading(false);

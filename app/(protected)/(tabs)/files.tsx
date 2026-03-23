@@ -1,12 +1,13 @@
 import { toast } from "@backpackapp-io/react-native-toast";
 import { Feather } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { File, Paths } from "expo-file-system";
 import { router } from "expo-router";
 import * as Sharing from "expo-sharing";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
-import { Query } from "react-native-appwrite";
+
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import FileActionSheet from "@/components/FileActionSheet";
@@ -14,137 +15,60 @@ import FileCard from "@/components/FileCard";
 import FilterSheet from "@/components/FilterSheet";
 import { EmptyState, LoadingSkeleton } from "@/components/ui";
 import { databases, storage } from "@/lib/appwrite";
+import { fileKeys, getFiles } from "@/lib/queries";
 import { useAuthStore } from "@/stores/authStore";
-import type {
-  FileCategory,
-  FileItem,
-  FilterOptions,
-  SortOption,
-} from "@/types";
+import type { FileItem, FilterOptions } from "@/types";
 
 const DB_ID = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID!;
 const FILES_TABLE_ID = process.env.EXPO_PUBLIC_APPWRITE_FILES_TABLE_ID!;
 const BUCKET_ID = process.env.EXPO_PUBLIC_APPWRITE_BUCKET_ID!;
 
-const PAGE_SIZE = 20;
-
-function buildQueries(
-  userId: string,
-  category: FileCategory | null,
-  sortBy: SortOption,
-  cursorId?: string,
-): string[] {
-  const queries: string[] = [
-    Query.equal("userId", userId),
-    Query.limit(PAGE_SIZE),
-  ];
-
-  if (category) queries.push(Query.equal("category", category));
-
-  switch (sortBy) {
-    case "newest":
-      queries.push(Query.orderDesc("$createdAt"));
-      break;
-    case "oldest":
-      queries.push(Query.orderAsc("$createdAt"));
-      break;
-    case "largest":
-      queries.push(Query.orderDesc("fileSize"));
-      break;
-    case "name":
-      queries.push(Query.orderAsc("fileName"));
-      break;
-  }
-
-  if (cursorId) queries.push(Query.cursorAfter(cursorId));
-
-  return queries;
-}
-
 export default function FilesScreen() {
   const user = useAuthStore((s) => s.user);
-
-  const [files, setFiles] = useState<FileItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const lastCursorId = useRef<string | undefined>(undefined);
+  const queryClient = useQueryClient();
 
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [filter, setFilter] = useState<FilterOptions>({
     category: null,
     sortBy: "newest",
   });
-
   const [filterVisible, setFilterVisible] = useState(false);
   const [actionFile, setActionFile] = useState<FileItem | null>(null);
-
-  const fetchFiles = useCallback(
-    async (opts: FilterOptions) => {
-      if (!user) return;
-      setIsLoading(true);
-      try {
-        const queries = buildQueries(user.$id, opts.category, opts.sortBy);
-        const res = await databases.listDocuments({
-          databaseId: DB_ID,
-          collectionId: FILES_TABLE_ID,
-          queries,
-        });
-        const docs = res.documents as unknown as FileItem[];
-        setFiles(docs);
-        lastCursorId.current =
-          docs.length > 0 ? docs[docs.length - 1].$id : undefined;
-        setHasMore(docs.length === PAGE_SIZE);
-      } catch (err) {
-        console.error("[files] fetchFiles error:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [user],
-  );
-
-  const fetchMore = useCallback(async () => {
-    if (!user || isLoadingMore || !hasMore || !lastCursorId.current) return;
-    setIsLoadingMore(true);
-    try {
-      const queries = buildQueries(
-        user.$id,
-        filter.category,
-        filter.sortBy,
-        lastCursorId.current,
-      );
-      const res = await databases.listDocuments({
-        databaseId: DB_ID,
-        collectionId: FILES_TABLE_ID,
-        queries,
-      });
-      const docs = res.documents as unknown as FileItem[];
-      setFiles((prev) => [...prev, ...docs]);
-      if (docs.length > 0) lastCursorId.current = docs[docs.length - 1].$id;
-      setHasMore(docs.length === PAGE_SIZE);
-    } catch (err) {
-      console.error("[files] fetchMore error:", err);
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }, [user, filter, isLoadingMore, hasMore]);
-
-  useEffect(() => {
-    fetchFiles(filter);
-  }, [fetchFiles, filter]);
-
   const [refreshing, setRefreshing] = useState(false);
+
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    refetch,
+  } = useInfiniteQuery({
+    queryKey: fileKeys.list(user?.$id ?? "", filter),
+    queryFn: ({ pageParam }) =>
+      getFiles(user!.$id, filter.category, filter.sortBy, pageParam),
+    initialPageParam: undefined as string | undefined,
+
+    getNextPageParam: (lastPage, allPages) => {
+      if (!lastPage.hasMore) return undefined;
+      const allFiles = allPages.flatMap((p) => p.files);
+      return allFiles[allFiles.length - 1]?.$id;
+    },
+    enabled: !!user,
+  });
+
+  // Flatten all pages into a single array for the FlashList.
+  const files = data?.pages.flatMap((p) => p.files) ?? [];
+
+  // Pull-to-refresh: invalidate this query so React Query refetches from page 1.
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    lastCursorId.current = undefined;
-    await fetchFiles(filter);
+    await refetch();
     setRefreshing(false);
-  }, [fetchFiles, filter]);
+  }, [refetch]);
 
   const handleApplyFilter = (opts: FilterOptions) => {
-    lastCursorId.current = undefined;
-    setFilter(opts); // triggers the useEffect → fetchFiles
+    // Changing filter changes the queryKey, so React Query automatically fetches the new filtered/sorted list.
   };
 
   const handleDownload = async (file: FileItem) => {
@@ -181,12 +105,7 @@ export default function FilesScreen() {
             documentId: file.$id,
             data: { fileName: newName.trim() },
           });
-          // optimistic update: update local state immediately instead of refetching
-          setFiles((prev) =>
-            prev.map((f) =>
-              f.$id === file.$id ? { ...f, fileName: newName.trim() } : f,
-            ),
-          );
+          await queryClient.invalidateQueries({ queryKey: fileKeys.all });
           toast.success("File renamed");
         } catch {
           toast.error("Rename failed");
@@ -208,7 +127,8 @@ export default function FilesScreen() {
         collectionId: FILES_TABLE_ID,
         documentId: file.$id,
       });
-      setFiles((prev) => prev.filter((f) => f.$id !== file.$id));
+
+      await queryClient.invalidateQueries({ queryKey: fileKeys.all });
       toast.success("File deleted");
     } catch {
       toast.error("Delete failed");
@@ -250,7 +170,6 @@ export default function FilesScreen() {
         </View>
       </View>
 
-      {/* ── Active filter chips ── */}
       {hasActiveFilter && (
         <View className="flex-row flex-wrap gap-2 px-5 py-2 bg-surface border-b border-border">
           {filter.category && (
@@ -299,7 +218,9 @@ export default function FilesScreen() {
           numColumns={viewMode === "grid" ? 2 : 1}
           onRefresh={onRefresh}
           refreshing={refreshing}
-          onEndReached={fetchMore}
+          onEndReached={() => {
+            if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+          }}
           onEndReachedThreshold={0.5}
           contentContainerStyle={{
             padding: viewMode === "grid" ? 4 : 0,
@@ -316,7 +237,7 @@ export default function FilesScreen() {
             />
           )}
           ListFooterComponent={
-            isLoadingMore ? (
+            isFetchingNextPage ? (
               <View className="py-4">
                 <LoadingSkeleton
                   variant={viewMode === "grid" ? "card" : "list-item"}
@@ -349,14 +270,28 @@ export default function FilesScreen() {
   );
 }
 
-//  fetchMore appends the next page onto the existing list.
-//  Guard conditions prevent double-fetching (isLoadingMore) and
-//  unnecessary requests when all pages have been consumed (!hasMore).
+// useInfiniteQuery vs useQuery:
+// useQuery is for a single fetch. useInfiniteQuery is for paginated data where
+// you load more results by appending pages. Each page has its own cursor.
 
-// File.downloadFileAsync() is the new expo-file-system API (v18+).
-// It downloads to a File inside Paths.document (the app's persistent storage)
-// and returns the File object whose .uri holds the local path for Sharing.
+// why invalidateQueries after delete/rename instead of optimistic update?
+// invalidating is simpler and guarantees the UI reflects what's actually in
+// the database. Optimistic updates are faster but require rollback logic on error.
 
-//   Alert.prompt is iOS-only. On Android it's undefined, so we check first.
-//   A proper cross-platform solution would use a custom TextInput modal,
-//   but that's deferred to a future iteration.
+// alert.prompt is iOS-only. On Android it's undefined, so we check first.
+// a proper cross-platform solution would use a custom TextInput modal,
+// but that's deferred to a future iteration.
+
+// useInfiniteQuery handles cursor-based pagination.
+// each "page" is one call to getFiles() with the cursor from the previous page.
+// pageParam starts as undefined (no cursor = first page).
+
+// getNextPageParam tells React Query what cursor to use for the next page.
+// it looks at the last item in the last fetched page. If hasMore is false,
+// returning undefined signals that there are no more pages to fetch.
+
+// invalidating fileKeys.all refreshes both this list AND the home screen's
+// recent files + storage stats in one call.
+
+// onEndReached fires when the user scrolls near the bottom.
+// fetchNextPage() loads the next cursor page and appends it to the cache.

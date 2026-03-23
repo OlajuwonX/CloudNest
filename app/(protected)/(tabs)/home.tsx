@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   RefreshControl,
   ScrollView,
@@ -16,10 +17,9 @@ import QuickAction from "@/components/QuickAction";
 import StorageCard from "@/components/StorageCard";
 import { Avatar, EmptyState, LoadingSkeleton } from "@/components/ui";
 
-import { useAuthStore } from "@/stores/authStore";
-import { useFileStore } from "@/stores/fileStore";
-
+import { fileKeys, getRecentFiles, getStorageStats } from "@/lib/queries";
 import { formatCurrentDate } from "@/lib/utils";
+import { useAuthStore } from "@/stores/authStore";
 
 const QUICK_ACTIONS = [
   {
@@ -47,36 +47,37 @@ const QUICK_ACTIONS = [
 
 export default function HomeScreen() {
   const user = useAuthStore((s) => s.user);
-  const recentFiles = useFileStore((s) => s.recentFiles);
-  const storageUsed = useFileStore((s) => s.storageUsed);
-  const storageBreakdown = useFileStore((s) => s.storageBreakdown);
-  const isLoading = useFileStore((s) => s.isLoading);
-  const fetchRecentFiles = useFileStore((s) => s.fetchRecentFiles);
-  const fetchStorageStats = useFileStore((s) => s.fetchStorageStats);
-
-  // ── Pull-to-refresh state ──
+  const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
 
-  // ── Data fetching ──
-  const loadData = useCallback(async () => {
-    if (!user) return;
-    await Promise.all([
-      fetchRecentFiles(user.$id),
-      fetchStorageStats(user.$id),
-    ]);
-  }, [user, fetchRecentFiles, fetchStorageStats]);
+  const { data: recentFiles = [], isLoading: isLoadingFiles } = useQuery({
+    queryKey: fileKeys.recent(user?.$id ?? ""),
+    queryFn: () => getRecentFiles(user!.$id),
+    enabled: !!user,
+  });
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  // Separate query for storage stats — independent cache entry.
+  const { data: stats, isLoading: isLoadingStats } = useQuery({
+    queryKey: fileKeys.storage(user?.$id ?? ""),
+    queryFn: () => getStorageStats(user!.$id),
+    enabled: !!user,
+  });
+
+  const isLoading = isLoadingFiles || isLoadingStats;
+  const storageUsed = stats?.total ?? 0;
+  const storageBreakdown = stats?.breakdown ?? {
+    images: 0,
+    videos: 0,
+    documents: 0,
+    others: 0,
+  };
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadData();
+    await queryClient.invalidateQueries({ queryKey: fileKeys.all });
     setRefreshing(false);
-  }, [loadData]);
+  }, [queryClient]);
 
-  // ── Derived values ──
   const firstName = user?.name?.split(" ")[0] ?? "there";
 
   return (
@@ -143,7 +144,6 @@ export default function HomeScreen() {
         </View>
 
         <View className="mt-6 px-5">
-          {/* Section header row */}
           <View className="flex-row justify-between items-center mb-3">
             <Text className="text-lg font-semibold text-text">
               Recent Files
@@ -166,9 +166,7 @@ export default function HomeScreen() {
                   file={file}
                   viewMode="list"
                   onPress={() => router.push(`/file/${file.$id}` as any)}
-                  onLongPress={() => {
-                    // long-press will open FileActionSheet (built in Phase 4)
-                  }}
+                  onLongPress={() => {}}
                 />
               ))}
             </View>
@@ -200,16 +198,18 @@ export default function HomeScreen() {
   );
 }
 
-// ── Auth state ── //
-// useAuthStore() -> is a Zustand hook. Calling it here subscribes this component
-// to changes in the auth slice — if user logs out, this component re-renders.
+// useQuery replaces the old Zustand fileStore for server data.
+// React Query manages loading state, caching, and background refetches automatically.
+// The queryKey is an array — React Query uses it as a cache key.
+// Including userId means each user gets their own isolated cache entry.
 
-// ── File store state  ── //
-// useFileStore() -> we use individual selectors (one per value) so the component only re-renders
-// when the specific slice it reads actually changes, rather than re-rendering on any store update.
+// useQuery fetches and caches the 5 most recent files.
+// queryKey includes userId so different users never share cached data.
+// enabled: !!user prevents the query from running before auth is ready.
 
-// reloadData() -> loadData fetches both recent files and storage stats in parallel.
-// Promise.all runs both requests simultaneously — faster than awaiting them one-by-one
-// because neither call depends on the other's result.  useCallback memoises the function.
-// Without it, a new function reference would be created on every render, causing the useEffect
-// below to fire in an infinite loop (since loadData is listed as a dependency)
+// invalidateQueries({ queryKey: fileKeys.all }) marks every query whose key
+// starts with ["files"] as stale. React Query then refetches them in the background.
+// This is how the home screen stays in sync after an upload or delete.
+
+// pull-to-refresh: invalidating fileKeys.all marks both the recent files
+// and storage queries as stale, which causes React Query to refetch them.

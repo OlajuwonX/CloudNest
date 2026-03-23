@@ -23,8 +23,11 @@ import Animated, {
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useQueryClient } from "@tanstack/react-query";
+
 import { Button } from "@/components/ui";
 import { databases, storage } from "@/lib/appwrite";
+import { fileKeys } from "@/lib/queries";
 import {
   formatFileSize,
   formatFullDate,
@@ -38,6 +41,7 @@ const BUCKET_ID = process.env.EXPO_PUBLIC_APPWRITE_BUCKET_ID!;
 
 export default function FileDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const queryClient = useQueryClient();
 
   const [file, setFile] = useState<FileItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -135,6 +139,8 @@ export default function FileDetailScreen() {
                 collectionId: FILES_TABLE_ID,
                 documentId: file.$id,
               });
+              // Invalidate so home dashboard + files list both refetch.
+              await queryClient.invalidateQueries({ queryKey: fileKeys.all });
               toast.success("File deleted");
               router.back();
             } catch {
