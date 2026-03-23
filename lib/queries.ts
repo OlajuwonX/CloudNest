@@ -18,6 +18,7 @@ export const fileKeys = {
   storage: (userId: string) => ["files", "storage", userId] as const,
   list: (userId: string, filter: FilterOptions) =>
     ["files", "list", userId, filter] as const,
+  search: (userId: string) => ["files", "search", userId] as const,
 };
 
 export const getRecentFiles = async (userId: string): Promise<FileItem[]> => {
@@ -99,6 +100,21 @@ export const getFiles = async (
 
   const files = res.documents as unknown as FileItem[];
   return { files, hasMore: files.length === PAGE_SIZE };
+};
+
+// fetches all files for a user — used for client-side search filtering.
+// capped at 200 to keep the payload manageable for a personal vault.
+export const getAllFiles = async (userId: string): Promise<FileItem[]> => {
+  const response = await databases.listDocuments({
+    databaseId: DB_ID,
+    collectionId: FILES_TABLE_ID,
+    queries: [
+      Query.equal("userId", userId),
+      Query.orderDesc("$createdAt"),
+      Query.limit(200),
+    ],
+  });
+  return response.documents as unknown as FileItem[];
 };
 
 // getFiles() -> cursorId is the $id of the last item on the previous page — Appwrite's way
