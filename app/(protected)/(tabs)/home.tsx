@@ -1,6 +1,9 @@
+import { toast } from "@backpackapp-io/react-native-toast";
 import { Feather } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { File, Paths } from "expo-file-system";
 import { router } from "expo-router";
+import * as Sharing from "expo-sharing";
 import React, { useCallback, useState } from "react";
 import {
   RefreshControl,
@@ -12,14 +15,22 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import FileActionSheet from "@/components/FileActionSheet";
 import FileCard from "@/components/FileCard";
+import FileDetailsModal from "@/components/FileDetailsModal";
 import QuickAction from "@/components/QuickAction";
+import RenameModal from "@/components/RenameModal";
 import StorageCard from "@/components/StorageCard";
 import { Avatar, EmptyState, LoadingSkeleton } from "@/components/ui";
-
+import { databases, storage } from "@/lib/appwrite";
 import { fileKeys, getRecentFiles, getStorageStats } from "@/lib/queries";
 import { formatCurrentDate } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
+import type { FileItem } from "@/types";
+
+const DB_ID = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID!;
+const FILES_TABLE_ID = process.env.EXPO_PUBLIC_APPWRITE_FILES_TABLE_ID!;
+const BUCKET_ID = process.env.EXPO_PUBLIC_APPWRITE_BUCKET_ID!;
 
 const QUICK_ACTIONS = [
   {
@@ -49,6 +60,9 @@ export default function HomeScreen() {
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
+  const [actionFile, setActionFile] = useState<FileItem | null>(null);
+  const [renameFile, setRenameFile] = useState<FileItem | null>(null);
+  const [detailsFile, setDetailsFile] = useState<FileItem | null>(null);
 
   const { data: recentFiles = [], isLoading: isLoadingFiles } = useQuery({
     queryKey: fileKeys.recent(user?.$id ?? ""),
@@ -56,7 +70,6 @@ export default function HomeScreen() {
     enabled: !!user,
   });
 
-  // Separate query for storage stats — independent cache entry.
   const { data: stats, isLoading: isLoadingStats } = useQuery({
     queryKey: fileKeys.storage(user?.$id ?? ""),
     queryFn: () => getStorageStats(user!.$id),
@@ -77,6 +90,58 @@ export default function HomeScreen() {
     await queryClient.invalidateQueries({ queryKey: fileKeys.all });
     setRefreshing(false);
   }, [queryClient]);
+
+  const handleDownload = async (file: FileItem) => {
+    try {
+      const url = storage.getFileDownloadURL(BUCKET_ID, file.storageFileId).href;
+      toast.loading("Downloading…");
+      const localFile = await File.downloadFileAsync(
+        url,
+        new File(Paths.document, file.fileName),
+      );
+      toast.dismiss();
+      await Sharing.shareAsync(localFile.uri);
+      toast.success("File downloaded");
+    } catch {
+      toast.dismiss();
+      toast.error("Download failed");
+    }
+  };
+
+  const handleRename = (file: FileItem) => {
+    setRenameFile(file);
+  };
+
+  const handleConfirmRename = async (newName: string) => {
+    if (!renameFile) return;
+    try {
+      await databases.updateDocument(
+        DB_ID,
+        FILES_TABLE_ID,
+        renameFile.$id,
+        { fileName: newName },
+      );
+      await queryClient.invalidateQueries({ queryKey: fileKeys.all });
+      toast.success("File renamed");
+    } catch {
+      toast.error("Rename failed");
+    }
+  };
+
+  const handleDelete = async (file: FileItem) => {
+    try {
+      await storage.deleteFile({ bucketId: BUCKET_ID, fileId: file.storageFileId });
+      await databases.deleteDocument({
+        databaseId: DB_ID,
+        collectionId: FILES_TABLE_ID,
+        documentId: file.$id,
+      });
+      await queryClient.invalidateQueries({ queryKey: fileKeys.all });
+      toast.success("File deleted");
+    } catch {
+      toast.error("Delete failed");
+    }
+  };
 
   const firstName = user?.name?.split(" ")[0] ?? "there";
 
@@ -165,8 +230,11 @@ export default function HomeScreen() {
                   key={file.$id}
                   file={file}
                   viewMode="list"
-                  onPress={() => router.push(`/file/${file.$id}` as any)}
-                  onLongPress={() => {}}
+                  onPress={() =>
+                    router.push(`/(protected)/file/${file.$id}` as any)
+                  }
+                  onLongPress={() => setActionFile(file)}
+                  onMenuPress={() => setActionFile(file)}
                 />
               ))}
             </View>
@@ -194,22 +262,30 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
       </ScrollView>
+
+      <FileActionSheet
+        isVisible={actionFile !== null}
+        onClose={() => setActionFile(null)}
+        file={actionFile}
+        onPreview={(f) => router.push(`/(protected)/file/${f.$id}` as any)}
+        onDownload={handleDownload}
+        onRename={handleRename}
+        onDetails={(f) => setDetailsFile(f)}
+        onDelete={handleDelete}
+      />
+
+      <RenameModal
+        visible={renameFile !== null}
+        currentName={renameFile?.fileName ?? ""}
+        onClose={() => setRenameFile(null)}
+        onRename={handleConfirmRename}
+      />
+
+      <FileDetailsModal
+        visible={detailsFile !== null}
+        file={detailsFile}
+        onClose={() => setDetailsFile(null)}
+      />
     </SafeAreaView>
   );
 }
-
-// useQuery replaces the old Zustand fileStore for server data.
-// React Query manages loading state, caching, and background refetches automatically.
-// The queryKey is an array — React Query uses it as a cache key.
-// Including userId means each user gets their own isolated cache entry.
-
-// useQuery fetches and caches the 5 most recent files.
-// queryKey includes userId so different users never share cached data.
-// enabled: !!user prevents the query from running before auth is ready.
-
-// invalidateQueries({ queryKey: fileKeys.all }) marks every query whose key
-// starts with ["files"] as stale. React Query then refetches them in the background.
-// This is how the home screen stays in sync after an upload or delete.
-
-// pull-to-refresh: invalidating fileKeys.all marks both the recent files
-// and storage queries as stale, which causes React Query to refetch them.

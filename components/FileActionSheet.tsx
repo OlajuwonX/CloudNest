@@ -16,6 +16,7 @@ interface FileActionSheetProps {
   onPreview: (file: FileItem) => void;
   onDownload: (file: FileItem) => void;
   onRename: (file: FileItem) => void;
+  onDetails: (file: FileItem) => void;
   onDelete: (file: FileItem) => void;
 }
 
@@ -26,12 +27,23 @@ interface ActionRow {
   danger?: boolean;
 }
 
-const ACTION_ROWS: ActionRow[] = [
-  { id: "preview", icon: "external-link", label: "Open" },
-  { id: "download", icon: "download", label: "Download" },
-  { id: "rename", icon: "edit-2", label: "Rename" },
-  { id: "delete", icon: "trash-2", label: "Delete", danger: true },
-];
+const PREVIEW_LABEL: Record<string, string> = {
+  image: "View",
+  video: "Play",
+  document: "Open",
+  other: "Open",
+};
+
+function buildActions(file: FileItem): ActionRow[] {
+  const previewLabel = PREVIEW_LABEL[file.category] ?? "Open";
+  return [
+    { id: "preview", icon: "external-link", label: previewLabel },
+    { id: "download", icon: "download", label: "Download" },
+    { id: "rename", icon: "edit-2", label: "Rename" },
+    { id: "details", icon: "info", label: "Details" },
+    { id: "delete", icon: "trash-2", label: "Delete", danger: true },
+  ];
+}
 
 export default function FileActionSheet({
   isVisible,
@@ -40,6 +52,7 @@ export default function FileActionSheet({
   onPreview,
   onDownload,
   onRename,
+  onDetails,
   onDelete,
 }: FileActionSheetProps) {
   const sheetRef = useRef<BottomSheet>(null);
@@ -93,6 +106,10 @@ export default function FileActionSheet({
         onClose();
         onRename(f);
         break;
+      case "details":
+        onClose();
+        setTimeout(() => onDetails(f), 350);
+        break;
       case "delete":
         handleDelete(f);
         break;
@@ -126,7 +143,7 @@ export default function FileActionSheet({
         )}
 
         {file &&
-          ACTION_ROWS.map((action) => (
+          buildActions(file).map((action) => (
             <TouchableOpacity
               key={action.id}
               onPress={() => handleAction(action.id, file)}

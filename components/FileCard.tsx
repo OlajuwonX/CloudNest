@@ -12,6 +12,7 @@ interface FileCardProps {
   viewMode: "list" | "grid";
   onPress: () => void;
   onLongPress?: () => void;
+  onMenuPress?: () => void;
 }
 
 const ICON_CONFIG = {
@@ -26,14 +27,18 @@ export default function FileCard({
   viewMode,
   onPress,
   onLongPress,
+  onMenuPress,
 }: FileCardProps) {
-  // fall back to "other" config for any unexpected category value
   const config = ICON_CONFIG[file.category] ?? ICON_CONFIG.other;
 
-  // to give haptic feedback so the user feels something happened before the action sheet or context menu opens.
   const handleLongPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onLongPress?.();
+  };
+
+  const handleMenuPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onMenuPress?.();
   };
 
   // horizontal row
@@ -61,12 +66,17 @@ export default function FileCard({
           </Text>
         </View>
 
-        <Feather name="more-vertical" size={18} color="#6B7280" />
+        <TouchableOpacity
+          onPress={handleMenuPress}
+          hitSlop={10}
+          activeOpacity={0.6}
+        >
+          <Feather name="more-vertical" size={18} color="#6B7280" />
+        </TouchableOpacity>
       </TouchableOpacity>
     );
   }
 
-  // grid mode
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -97,30 +107,24 @@ export default function FileCard({
         )}
       </View>
 
-      <View className="px-2.5 py-2">
-        <Text className="text-text text-xs font-medium" numberOfLines={1}>
-          {file.fileName}
-        </Text>
-        <Text className="text-muted text-xs mt-0.5">
-          {formatFileSize(file.fileSize)}
-        </Text>
+      <View className="px-2.5 py-2 flex-row items-center">
+        <View className="flex-1">
+          <Text className="text-text text-xs font-medium" numberOfLines={1}>
+            {file.fileName}
+          </Text>
+          <Text className="text-muted text-xs mt-0.5">
+            {formatFileSize(file.fileSize)}
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          onPress={handleMenuPress}
+          hitSlop={8}
+          activeOpacity={0.6}
+        >
+          <Feather name="more-vertical" size={16} color="#6B7280" />
+        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
 }
-
-// numberOfLines={1} truncates long filenames with "…"
-// so the row never wraps to a second line.
-
-// more-vertical 3-dot menu icon — tapping the whole row triggers onPress,
-// the parent screen handles long-press for the action sheet
-
-//            * expo-image is preferred over RN's built-in Image because it:
-//            * - Caches aggressively (memory + disk)
-//            * - Supports smooth transitions (transition={200})
-//            * - Handles loading/error states internally
-//            *
-//            * NOTE: in the real integration, replace `storageFileId` with the
-//            * actual Appwrite preview URL from storage.getFilePreview(...).
-
-// for cross-platform shadow styles: elevation for Android, shadow* for iOS

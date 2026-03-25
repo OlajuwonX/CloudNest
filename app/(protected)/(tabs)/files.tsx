@@ -6,13 +6,15 @@ import { File, Paths } from "expo-file-system";
 import { router } from "expo-router";
 import * as Sharing from "expo-sharing";
 import React, { useCallback, useState } from "react";
-import { Alert, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import FileActionSheet from "@/components/FileActionSheet";
 import FileCard from "@/components/FileCard";
+import FileDetailsModal from "@/components/FileDetailsModal";
 import FilterSheet from "@/components/FilterSheet";
+import RenameModal from "@/components/RenameModal";
 import { EmptyState, LoadingSkeleton } from "@/components/ui";
 import { databases, storage } from "@/lib/appwrite";
 import { fileKeys, getFiles } from "@/lib/queries";
@@ -34,6 +36,8 @@ export default function FilesScreen() {
   });
   const [filterVisible, setFilterVisible] = useState(false);
   const [actionFile, setActionFile] = useState<FileItem | null>(null);
+  const [renameFile, setRenameFile] = useState<FileItem | null>(null);
+  const [detailsFile, setDetailsFile] = useState<FileItem | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const {
@@ -94,27 +98,20 @@ export default function FilesScreen() {
   };
 
   const handleRename = (file: FileItem) => {
-    Alert.prompt?.(
-      "Rename File",
-      "Enter a new name",
-      async (newName) => {
-        if (!newName?.trim() || newName.trim() === file.fileName) return;
-        try {
-          await databases.updateDocument({
-            databaseId: DB_ID,
-            collectionId: FILES_TABLE_ID,
-            documentId: file.$id,
-            data: { fileName: newName.trim() },
-          });
-          await queryClient.invalidateQueries({ queryKey: fileKeys.all });
-          toast.success("File renamed");
-        } catch {
-          toast.error("Rename failed");
-        }
-      },
-      "plain-text",
-      file.fileName,
-    );
+    setRenameFile(file);
+  };
+
+  const handleConfirmRename = async (newName: string) => {
+    if (!renameFile) return;
+    try {
+      await databases.updateDocument(DB_ID, FILES_TABLE_ID, renameFile.$id, {
+        fileName: newName,
+      });
+      await queryClient.invalidateQueries({ queryKey: fileKeys.all });
+      toast.success("File renamed");
+    } catch {
+      toast.error("Rename failed");
+    }
   };
 
   const handleDelete = async (file: FileItem) => {
@@ -235,6 +232,7 @@ export default function FilesScreen() {
                 router.push(`/(protected)/file/${item.$id}` as any)
               }
               onLongPress={() => setActionFile(item)}
+              onMenuPress={() => setActionFile(item)}
             />
           )}
           ListFooterComponent={
@@ -265,7 +263,21 @@ export default function FilesScreen() {
         onPreview={(f) => router.push(`/(protected)/file/${f.$id}` as any)}
         onDownload={handleDownload}
         onRename={handleRename}
+        onDetails={(f) => setDetailsFile(f)}
         onDelete={handleDelete}
+      />
+
+      <RenameModal
+        visible={renameFile !== null}
+        currentName={renameFile?.fileName ?? ""}
+        onClose={() => setRenameFile(null)}
+        onRename={handleConfirmRename}
+      />
+
+      <FileDetailsModal
+        visible={detailsFile !== null}
+        file={detailsFile}
+        onClose={() => setDetailsFile(null)}
       />
     </SafeAreaView>
   );
