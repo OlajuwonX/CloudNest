@@ -5,7 +5,7 @@ import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { File, Paths } from "expo-file-system";
 import { router } from "expo-router";
 import * as Sharing from "expo-sharing";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,7 +16,7 @@ import FileDetailsModal from "@/components/FileDetailsModal";
 import FilterSheet from "@/components/FilterSheet";
 import RenameModal from "@/components/RenameModal";
 import { EmptyState, LoadingSkeleton } from "@/components/ui";
-import { databases, storage } from "@/lib/appwrite";
+import { account, databases, storage } from "@/lib/appwrite";
 import { fileKeys, getFiles } from "@/lib/queries";
 import { useAuthStore } from "@/stores/authStore";
 import type { FileItem, FilterOptions } from "@/types";
@@ -39,6 +39,11 @@ export default function FilesScreen() {
   const [renameFile, setRenameFile] = useState<FileItem | null>(null);
   const [detailsFile, setDetailsFile] = useState<FileItem | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [jwt, setJwt] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    account.createJWT().then(({ jwt: token }) => setJwt(token)).catch(() => {});
+  }, []);
 
   const {
     data,
@@ -228,6 +233,7 @@ export default function FilesScreen() {
             <FileCard
               file={item}
               viewMode={viewMode}
+              jwt={jwt}
               onPress={() =>
                 router.push(`/(protected)/file/${item.$id}` as any)
               }

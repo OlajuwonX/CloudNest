@@ -4,8 +4,11 @@ import { Image } from "expo-image";
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 
+import { storage } from "@/lib/appwrite";
 import { formatDate, formatFileSize } from "@/lib/utils";
 import type { FileItem } from "@/types";
+
+const BUCKET_ID = process.env.EXPO_PUBLIC_APPWRITE_BUCKET_ID!;
 
 interface FileCardProps {
   file: FileItem;
@@ -13,6 +16,7 @@ interface FileCardProps {
   onPress: () => void;
   onLongPress?: () => void;
   onMenuPress?: () => void;
+  jwt?: string;
 }
 
 const ICON_CONFIG = {
@@ -28,8 +32,14 @@ export default function FileCard({
   onPress,
   onLongPress,
   onMenuPress,
+  jwt,
 }: FileCardProps) {
   const config = ICON_CONFIG[file.category] ?? ICON_CONFIG.other;
+
+  const thumbnailUrl =
+    jwt && (file.category === "image" || file.category === "video")
+      ? `${storage.getFilePreviewURL(BUCKET_ID, file.storageFileId).href}&jwt=${jwt}`
+      : null;
 
   const handleLongPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -51,10 +61,18 @@ export default function FileCard({
         className="flex-row items-center py-3 px-4 border-b border-border bg-surface"
       >
         <View
-          className="w-11 h-11 rounded-full items-center justify-center mr-3 shrink-0"
+          className="w-11 h-11 rounded-full items-center justify-center mr-3 shrink-0 overflow-hidden"
           style={{ backgroundColor: config.bg }}
         >
-          <Feather name={config.icon} size={20} color={config.color} />
+          {thumbnailUrl ? (
+            <Image
+              source={{ uri: thumbnailUrl }}
+              contentFit="cover"
+              style={{ width: "100%", height: "100%" }}
+            />
+          ) : (
+            <Feather name={config.icon} size={20} color={config.color} />
+          )}
         </View>
 
         <View className="flex-1">
@@ -95,13 +113,35 @@ export default function FileCard({
         className="w-full items-center justify-center"
         style={{ height: 110, backgroundColor: config.bg }}
       >
-        {file.category === "image" ? (
-          <Image
-            source={{ uri: file.storageFileId }}
-            contentFit="cover"
-            style={{ width: "100%", height: "100%" }}
-            transition={200}
-          />
+        {thumbnailUrl ? (
+          <>
+            <Image
+              source={{ uri: thumbnailUrl }}
+              contentFit="cover"
+              style={{ width: "100%", height: "100%" }}
+              transition={200}
+            />
+            {file.category === "video" && (
+              <View
+                style={{
+                  position: "absolute",
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  backgroundColor: "rgba(0,0,0,0.55)",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Feather
+                  name="play"
+                  size={14}
+                  color="#fff"
+                  style={{ marginLeft: 2 }}
+                />
+              </View>
+            )}
+          </>
         ) : (
           <Feather name={config.icon} size={40} color={config.color} />
         )}

@@ -49,24 +49,18 @@ function fmtMs(ms: number): string {
 function VideoPlayer({ uri }: { uri: string }) {
   const videoRef = useRef<Video>(null);
   const [status, setStatus] = useState<AVPlaybackStatus | null>(null);
+  const [shouldPlay, setShouldPlay] = useState(false);
 
   const loaded: AVPlaybackStatusSuccess | null =
     status !== null && status.isLoaded ? status : null;
   const hasError =
     status !== null && !status.isLoaded && "error" in status && !!status.error;
-  const isPlaying = loaded?.isPlaying ?? false;
+  const isPlaying = shouldPlay;
   const posMs = loaded?.positionMillis ?? 0;
   const durMs = loaded?.durationMillis ?? 0;
   const progress = durMs > 0 ? posMs / durMs : 0;
 
-  const togglePlay = async () => {
-    if (!videoRef.current) return;
-    if (isPlaying) {
-      await videoRef.current.pauseAsync();
-    } else {
-      await videoRef.current.playAsync();
-    }
-  };
+  const togglePlay = () => setShouldPlay((p) => !p);
 
   const handleFullscreen = async () => {
     if (!videoRef.current) return;
@@ -96,7 +90,7 @@ function VideoPlayer({ uri }: { uri: string }) {
         style={{ width: "100%", height: "100%" }}
         resizeMode={ResizeMode.CONTAIN}
         useNativeControls={false}
-        shouldPlay={false}
+        shouldPlay={shouldPlay}
         onPlaybackStatusUpdate={setStatus}
       />
 

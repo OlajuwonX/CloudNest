@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { File, Paths } from "expo-file-system";
 import { router } from "expo-router";
 import * as Sharing from "expo-sharing";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   RefreshControl,
   ScrollView,
@@ -22,7 +22,7 @@ import QuickAction from "@/components/QuickAction";
 import RenameModal from "@/components/RenameModal";
 import StorageCard from "@/components/StorageCard";
 import { Avatar, EmptyState, LoadingSkeleton } from "@/components/ui";
-import { databases, storage } from "@/lib/appwrite";
+import { account, databases, storage } from "@/lib/appwrite";
 import { fileKeys, getRecentFiles, getStorageStats } from "@/lib/queries";
 import { formatCurrentDate } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
@@ -63,6 +63,11 @@ export default function HomeScreen() {
   const [actionFile, setActionFile] = useState<FileItem | null>(null);
   const [renameFile, setRenameFile] = useState<FileItem | null>(null);
   const [detailsFile, setDetailsFile] = useState<FileItem | null>(null);
+  const [jwt, setJwt] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    account.createJWT().then(({ jwt: token }) => setJwt(token)).catch(() => {});
+  }, []);
 
   const { data: recentFiles = [], isLoading: isLoadingFiles } = useQuery({
     queryKey: fileKeys.recent(user?.$id ?? ""),
@@ -233,6 +238,7 @@ export default function HomeScreen() {
                   onPress={() =>
                     router.push(`/(protected)/file/${file.$id}` as any)
                   }
+                  jwt={jwt}
                   onLongPress={() => setActionFile(file)}
                   onMenuPress={() => setActionFile(file)}
                 />
