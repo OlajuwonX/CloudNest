@@ -45,18 +45,28 @@ export default function SplashScreen1() {
       }),
     ]);
 
-    // ── Step 3: Run the full sequence, then navigate ─── //
-    // We read auth state via getState() (not a hook) so we don't need to
-    // subscribe to the store or cause any re-renders here.
+    // ── step 3: Run the full sequence, then navigate ─── //
     Animated.sequence([fadeIn, fadeOut]).start(() => {
+      const navigate = (authenticated: boolean) => {
+        if (authenticated) {
+          router.replace("/(protected)/(tabs)/home");
+        } else {
+          router.replace("/(splash-screen)/screen2");
+        }
+      };
+
       const { isAuthenticated, isLoading } = useAuthStore.getState();
 
-      if (!isLoading && isAuthenticated) {
-        // Returning user — skip the intro flow entirely
-        router.replace("/(protected)/(tabs)/home");
+      if (!isLoading) {
+        // session check already resolved — navigate immediately.
+        navigate(isAuthenticated);
       } else {
-        // New user, logged-out user, or (rare) still-loading on slow network.
-        router.replace("/(splash-screen)/screen2");
+        const unsub = useAuthStore.subscribe((state) => {
+          if (!state.isLoading) {
+            unsub();
+            navigate(state.isAuthenticated);
+          }
+        });
       }
     });
   }, [logoOpacity, logoScale, router]);

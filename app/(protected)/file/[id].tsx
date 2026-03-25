@@ -46,13 +46,7 @@ function fmtMs(ms: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-function VideoPlayer({
-  uri,
-  headers,
-}: {
-  uri: string;
-  headers?: Record<string, string>;
-}) {
+function VideoPlayer({ uri }: { uri: string }) {
   const videoRef = useRef<Video>(null);
   const [status, setStatus] = useState<AVPlaybackStatus | null>(null);
 
@@ -98,7 +92,7 @@ function VideoPlayer({
     <View className="flex-1 bg-black">
       <Video
         ref={videoRef}
-        source={{ uri, headers }}
+        source={{ uri }}
         style={{ width: "100%", height: "100%" }}
         resizeMode={ResizeMode.CONTAIN}
         useNativeControls={false}
@@ -186,13 +180,7 @@ function VideoPlayer({
   );
 }
 
-function ZoomableImage({
-  uri,
-  headers,
-}: {
-  uri: string;
-  headers?: Record<string, string>;
-}) {
+function ZoomableImage({ uri }: { uri: string }) {
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
 
@@ -234,7 +222,7 @@ function ZoomableImage({
       <GestureDetector gesture={gesture}>
         <Animated.View style={[{ flex: 1 }, animatedStyle]}>
           <Image
-            source={{ uri, headers }}
+            source={{ uri }}
             contentFit="contain"
             style={{ flex: 1 }}
             transition={200}
@@ -248,18 +236,16 @@ function ZoomableImage({
 function PreviewArea({
   file,
   fileViewUrl,
-  headers,
 }: {
   file: FileItem;
   fileViewUrl: string;
-  headers?: Record<string, string>;
 }) {
   if (file.category === "image") {
-    return <ZoomableImage uri={fileViewUrl} headers={headers} />;
+    return <ZoomableImage uri={fileViewUrl} />;
   }
 
   if (file.category === "video") {
-    return <VideoPlayer uri={fileViewUrl} headers={headers} />;
+    return <VideoPlayer uri={fileViewUrl} />;
   }
 
   if (file.fileType === "application/pdf") {
@@ -313,16 +299,14 @@ export default function FileDetailScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
   const [renameVisible, setRenameVisible] = useState(false);
-  const [authHeaders, setAuthHeaders] = useState<
-    Record<string, string> | undefined
-  >(undefined);
+  // JWT is embedded directly in media URLs as `&jwt=<token>` so the native
+  // video player and expo-image both authenticate without custom headers.
+  const [jwt, setJwt] = useState<string | null>(null);
 
-  // generate a short-lived JWT so expo-image / expo-av can authenticate
-  // against Appwrite's storage endpoint without relying on cookie sharing.
   useEffect(() => {
     account
       .createJWT()
-      .then(({ jwt }) => setAuthHeaders({ "x-appwrite-jwt": jwt }))
+      .then(({ jwt: token }) => setJwt(token))
       .catch(() => {});
   }, []);
 
@@ -344,8 +328,12 @@ export default function FileDetailScreen() {
     })();
   }, [id]);
 
+  // append JWT as a query param so both expo-image and the native video player
+  // can authenticate without relying on custom HTTP headers or shared cookies.
+  const appendJwt = (url: string) => (jwt ? `${url}&jwt=${jwt}` : url);
+
   const fileViewUrl = file
-    ? storage.getFileViewURL(BUCKET_ID, file.storageFileId).href
+    ? appendJwt(storage.getFileViewURL(BUCKET_ID, file.storageFileId).href)
     : "";
 
   const fileDownloadUrl = file
@@ -483,11 +471,7 @@ export default function FileDetailScreen() {
 
   return (
     <View className="flex-1 bg-black">
-      <PreviewArea
-        file={file}
-        fileViewUrl={fileViewUrl}
-        headers={authHeaders}
-      />
+      <PreviewArea file={file} fileViewUrl={fileViewUrl} />
 
       <View
         style={{
