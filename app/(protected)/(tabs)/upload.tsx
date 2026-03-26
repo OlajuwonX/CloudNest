@@ -439,7 +439,7 @@ function FilePreviewCard({
   );
 }
 
-// PickFromGallery() -> Photo & Video Library picker.
+//  pickFromGallery() -> Photo & Video Library picker.
 //  We request permission first. If denied we show a system alert so the user
 //  knows they need to grant access in Settings rather than just seeing nothing happen.
 
