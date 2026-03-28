@@ -22,7 +22,7 @@ import FileCard from "@/components/FileCard";
 import FileDetailsModal from "@/components/FileDetailsModal";
 import QuickAction from "@/components/QuickAction";
 import RenameModal from "@/components/RenameModal";
-import StorageCard from "@/components/StorageCard";
+import StorageAnalyticsCard from "@/components/StorageAnalyticsCard";
 import { Avatar, EmptyState, LoadingSkeleton } from "@/components/ui";
 import { account, databases, storage } from "@/lib/appwrite";
 import { type CacheIndex, getCacheIndex } from "@/lib/cache";
@@ -234,7 +234,11 @@ export default function HomeScreen() {
         </View>
 
         <View className="mx-5 mt-6">
-          <StorageCard used={storageUsed} breakdown={storageBreakdown} />
+          <StorageAnalyticsCard
+            userId={user?.$id ?? ""}
+            used={storageUsed}
+            breakdown={storageBreakdown}
+          />
         </View>
 
         <View className="mt-6">
