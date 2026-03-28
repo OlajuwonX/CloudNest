@@ -17,6 +17,7 @@ interface FileCardProps {
   onLongPress?: () => void;
   onMenuPress?: () => void;
   jwt?: string;
+  isCached?: boolean;
 }
 
 const ICON_CONFIG = {
@@ -33,6 +34,7 @@ export default function FileCard({
   onLongPress,
   onMenuPress,
   jwt,
+  isCached = false,
 }: FileCardProps) {
   const config = ICON_CONFIG[file.category] ?? ICON_CONFIG.other;
 
@@ -79,9 +81,14 @@ export default function FileCard({
           <Text className="text-text font-medium text-sm" numberOfLines={1}>
             {file.fileName}
           </Text>
-          <Text className="text-muted text-xs mt-0.5">
-            {formatFileSize(file.fileSize)} · {formatDate(file.$createdAt)}
-          </Text>
+          <View className="flex-row items-center gap-1.5 mt-0.5">
+            <Text className="text-muted text-xs">
+              {formatFileSize(file.fileSize)} · {formatDate(file.$createdAt)}
+            </Text>
+            {isCached && (
+              <Feather name="check-circle" size={11} color="#16A34A" />
+            )}
+          </View>
         </View>
 
         <TouchableOpacity
@@ -113,6 +120,24 @@ export default function FileCard({
         className="w-full items-center justify-center"
         style={{ height: 110, backgroundColor: config.bg }}
       >
+        {isCached && (
+          <View
+            style={{
+              position: "absolute",
+              top: 6,
+              right: 6,
+              zIndex: 1,
+              backgroundColor: "#16A34A",
+              borderRadius: 10,
+              width: 18,
+              height: 18,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Feather name="check" size={10} color="#fff" />
+          </View>
+        )}
         {thumbnailUrl ? (
           <>
             <Image

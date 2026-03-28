@@ -15,6 +15,8 @@ interface FileActionSheetProps {
   file: FileItem | null;
   onPreview: (file: FileItem) => void;
   onDownload: (file: FileItem) => void;
+  onCopyLink: (file: FileItem) => void;
+  onShareEmail: (file: FileItem) => void;
   onRename: (file: FileItem) => void;
   onDetails: (file: FileItem) => void;
   onDelete: (file: FileItem) => void;
@@ -39,6 +41,8 @@ function buildActions(file: FileItem): ActionRow[] {
   return [
     { id: "preview", icon: "external-link", label: previewLabel },
     { id: "download", icon: "download", label: "Download" },
+    { id: "copyLink", icon: "link", label: "Copy Link" },
+    { id: "shareEmail", icon: "mail", label: "Share via Email" },
     { id: "rename", icon: "edit-2", label: "Rename" },
     { id: "details", icon: "info", label: "Details" },
     { id: "delete", icon: "trash-2", label: "Delete", danger: true },
@@ -51,6 +55,8 @@ export default function FileActionSheet({
   file,
   onPreview,
   onDownload,
+  onCopyLink,
+  onShareEmail,
   onRename,
   onDetails,
   onDelete,
@@ -101,6 +107,14 @@ export default function FileActionSheet({
       case "download":
         onClose();
         onDownload(f);
+        break;
+      case "copyLink":
+        onClose();
+        onCopyLink(f);
+        break;
+      case "shareEmail":
+        onClose();
+        onShareEmail(f);
         break;
       case "rename":
         onClose();

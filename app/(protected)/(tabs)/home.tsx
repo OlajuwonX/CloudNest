@@ -1,7 +1,9 @@
 import { toast } from "@backpackapp-io/react-native-toast";
 import { Feather } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import * as Clipboard from "expo-clipboard";
 import { File, Paths } from "expo-file-system";
+import * as MailComposer from "expo-mail-composer";
 import { router } from "expo-router";
 import * as Sharing from "expo-sharing";
 import React, { useCallback, useEffect, useState } from "react";
@@ -23,6 +25,7 @@ import RenameModal from "@/components/RenameModal";
 import StorageCard from "@/components/StorageCard";
 import { Avatar, EmptyState, LoadingSkeleton } from "@/components/ui";
 import { account, databases, storage } from "@/lib/appwrite";
+import { type CacheIndex, getCacheIndex } from "@/lib/cache";
 import { fileKeys, getRecentFiles, getStorageStats } from "@/lib/queries";
 import { formatCurrentDate } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
@@ -64,9 +67,14 @@ export default function HomeScreen() {
   const [renameFile, setRenameFile] = useState<FileItem | null>(null);
   const [detailsFile, setDetailsFile] = useState<FileItem | null>(null);
   const [jwt, setJwt] = useState<string | undefined>(undefined);
+  const [cacheIndex, setCacheIndex] = useState<CacheIndex>({});
 
   useEffect(() => {
-    account.createJWT().then(({ jwt: token }) => setJwt(token)).catch(() => {});
+    account
+      .createJWT()
+      .then(({ jwt: token }) => setJwt(token))
+      .catch(() => {});
+    getCacheIndex().then(setCacheIndex);
   }, []);
 
   const { data: recentFiles = [], isLoading: isLoadingFiles } = useQuery({
@@ -98,7 +106,10 @@ export default function HomeScreen() {
 
   const handleDownload = async (file: FileItem) => {
     try {
-      const url = storage.getFileDownloadURL(BUCKET_ID, file.storageFileId).href;
+      const url = storage.getFileDownloadURL(
+        BUCKET_ID,
+        file.storageFileId,
+      ).href;
       toast.loading("Downloading…");
       const localFile = await File.downloadFileAsync(
         url,
@@ -113,6 +124,42 @@ export default function HomeScreen() {
     }
   };
 
+  const handleCopyLink = async (file: FileItem) => {
+    try {
+      const { jwt: linkJwt } = await account.createJWT();
+      const url = `${storage.getFileViewURL(BUCKET_ID, file.storageFileId).href}&jwt=${linkJwt}`;
+      await Clipboard.setStringAsync(url);
+      toast.success("Link copied – expires in 15 min");
+    } catch {
+      toast.error("Failed to copy link");
+    }
+  };
+
+  const handleShareEmail = async (file: FileItem) => {
+    const available = await MailComposer.isAvailableAsync();
+    if (!available) {
+      toast.error("Email not available on this device");
+      return;
+    }
+    try {
+      toast.loading("Preparing…");
+      const url = storage.getFileDownloadURL(BUCKET_ID, file.storageFileId).href;
+      const localFile = await File.downloadFileAsync(
+        url,
+        new File(Paths.document, file.fileName),
+      );
+      toast.dismiss();
+      await MailComposer.composeAsync({
+        subject: `Shared file: ${file.fileName}`,
+        body: "I'm sharing a file with you from CloudNest.",
+        attachments: [localFile.uri],
+      });
+    } catch {
+      toast.dismiss();
+      toast.error("Failed to prepare email");
+    }
+  };
+
   const handleRename = (file: FileItem) => {
     setRenameFile(file);
   };
@@ -120,12 +167,9 @@ export default function HomeScreen() {
   const handleConfirmRename = async (newName: string) => {
     if (!renameFile) return;
     try {
-      await databases.updateDocument(
-        DB_ID,
-        FILES_TABLE_ID,
-        renameFile.$id,
-        { fileName: newName },
-      );
+      await databases.updateDocument(DB_ID, FILES_TABLE_ID, renameFile.$id, {
+        fileName: newName,
+      });
       await queryClient.invalidateQueries({ queryKey: fileKeys.all });
       toast.success("File renamed");
     } catch {
@@ -135,7 +179,10 @@ export default function HomeScreen() {
 
   const handleDelete = async (file: FileItem) => {
     try {
-      await storage.deleteFile({ bucketId: BUCKET_ID, fileId: file.storageFileId });
+      await storage.deleteFile({
+        bucketId: BUCKET_ID,
+        fileId: file.storageFileId,
+      });
       await databases.deleteDocument({
         databaseId: DB_ID,
         collectionId: FILES_TABLE_ID,
@@ -239,6 +286,7 @@ export default function HomeScreen() {
                     router.push(`/(protected)/file/${file.$id}` as any)
                   }
                   jwt={jwt}
+                  isCached={!!cacheIndex[file.storageFileId]}
                   onLongPress={() => setActionFile(file)}
                   onMenuPress={() => setActionFile(file)}
                 />
@@ -275,6 +323,8 @@ export default function HomeScreen() {
         file={actionFile}
         onPreview={(f) => router.push(`/(protected)/file/${f.$id}` as any)}
         onDownload={handleDownload}
+        onCopyLink={handleCopyLink}
+        onShareEmail={handleShareEmail}
         onRename={handleRename}
         onDetails={(f) => setDetailsFile(f)}
         onDelete={handleDelete}

@@ -28,9 +28,12 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useQueryClient } from "@tanstack/react-query";
+import * as Clipboard from "expo-clipboard";
+import * as MailComposer from "expo-mail-composer";
 
 import RenameModal from "@/components/RenameModal";
 import { account, databases, storage } from "@/lib/appwrite";
+import { cacheFile, getCacheEntry } from "@/lib/cache";
 import { fileKeys } from "@/lib/queries";
 import { formatFileSize } from "@/lib/utils";
 import type { FileItem } from "@/types";
@@ -296,6 +299,7 @@ export default function FileDetailScreen() {
   // JWT is embedded directly in media URLs as `&jwt=<token>` so the native
   // video player and expo-image both authenticate without custom headers.
   const [jwt, setJwt] = useState<string | null>(null);
+  const [localUri, setLocalUri] = useState<string | null>(null);
 
   useEffect(() => {
     account
@@ -303,6 +307,29 @@ export default function FileDetailScreen() {
       .then(({ jwt: token }) => setJwt(token))
       .catch(() => {});
   }, []);
+
+  // Check cache and start background download for offline access.
+  useEffect(() => {
+    if (!file || !jwt) return;
+    let cancelled = false;
+
+    getCacheEntry(file.storageFileId).then((entry) => {
+      if (cancelled) return;
+      if (entry) {
+        setLocalUri(entry.localUri);
+        return;
+      }
+      // Background download — silently cache for next visit.
+      const dlUrl = `${storage.getFileDownloadURL(BUCKET_ID, file.storageFileId).href}&jwt=${jwt}`;
+      cacheFile(file.storageFileId, file.fileName, dlUrl).then((uri) => {
+        if (!cancelled && uri) setLocalUri(uri);
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [file, jwt]);
 
   useEffect(() => {
     if (!id) return;
@@ -329,6 +356,9 @@ export default function FileDetailScreen() {
   const fileViewUrl = file
     ? appendJwt(storage.getFileViewURL(BUCKET_ID, file.storageFileId).href)
     : "";
+
+  // Use local cached file when available — enables offline preview and faster load.
+  const previewUri = localUri ?? fileViewUrl;
 
   const fileDownloadUrl = file
     ? storage.getFileDownloadURL(BUCKET_ID, file.storageFileId).href
@@ -361,20 +391,73 @@ export default function FileDetailScreen() {
     }
   };
 
-  const handleShare = async () => {
+  const shareNative = async () => {
     if (!file) return;
     try {
       toast.loading("Preparing…");
-      const localFile = await File.downloadFileAsync(
-        fileDownloadUrl,
-        new File(Paths.document, file.fileName),
-      );
+      const src = localUri ?? fileDownloadUrl;
+      const localFile = localUri
+        ? { uri: localUri }
+        : await File.downloadFileAsync(
+            src,
+            new File(Paths.document, file.fileName),
+          );
       toast.dismiss();
       await Sharing.shareAsync(localFile.uri);
     } catch {
       toast.dismiss();
       toast.error("Share failed");
     }
+  };
+
+  const shareCopyLink = async () => {
+    if (!file) return;
+    try {
+      const { jwt: linkJwt } = await account.createJWT();
+      const url = `${storage.getFileViewURL(BUCKET_ID, file.storageFileId).href}&jwt=${linkJwt}`;
+      await Clipboard.setStringAsync(url);
+      toast.success("Link copied – expires in 15 min");
+    } catch {
+      toast.error("Failed to copy link");
+    }
+  };
+
+  const shareEmail = async () => {
+    if (!file) return;
+    const available = await MailComposer.isAvailableAsync();
+    if (!available) {
+      toast.error("Email not available on this device");
+      return;
+    }
+    try {
+      toast.loading("Preparing…");
+      const src = localUri ?? fileDownloadUrl;
+      const localFile = localUri
+        ? { uri: localUri }
+        : await File.downloadFileAsync(
+            src,
+            new File(Paths.document, file.fileName),
+          );
+      toast.dismiss();
+      await MailComposer.composeAsync({
+        subject: `Shared file: ${file.fileName}`,
+        body: "I'm sharing a file with you from CloudNest.",
+        attachments: [localFile.uri],
+      });
+    } catch {
+      toast.dismiss();
+      toast.error("Failed to prepare email");
+    }
+  };
+
+  const handleShare = () => {
+    if (!file) return;
+    Alert.alert("Share", file.fileName, [
+      { text: "Share File", onPress: shareNative },
+      { text: "Copy Link", onPress: shareCopyLink },
+      { text: "Share via Email", onPress: shareEmail },
+      { text: "Cancel", style: "cancel" },
+    ]);
   };
 
   const handleRename = async (newName: string) => {
@@ -465,7 +548,7 @@ export default function FileDetailScreen() {
 
   return (
     <View className="flex-1 bg-black">
-      <PreviewArea file={file} fileViewUrl={fileViewUrl} />
+      <PreviewArea file={file} fileViewUrl={previewUri} />
 
       <View
         style={{

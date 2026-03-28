@@ -25,7 +25,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import StorageCard from "@/components/StorageCard";
 import { Avatar, LoadingSkeleton } from "@/components/ui";
 import { account, storage } from "@/lib/appwrite";
+import { clearCache, getCacheSizeAndCount } from "@/lib/cache";
 import { fileKeys, getStorageStats } from "@/lib/queries";
+import { formatFileSize } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
 
 const BUCKET_ID = process.env.EXPO_PUBLIC_APPWRITE_BUCKET_ID!;
@@ -187,6 +189,35 @@ export default function ProfileScreen() {
   const [nameModalVisible, setNameModalVisible] = useState(false);
   const [savingName, setSavingName] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
+  const [cacheSize, setCacheSize] = useState(0);
+  const [cacheCount, setCacheCount] = useState(0);
+
+  useEffect(() => {
+    getCacheSizeAndCount().then(({ size, count }) => {
+      setCacheSize(size);
+      setCacheCount(count);
+    });
+  }, []);
+
+  const handleClearCache = () => {
+    Alert.alert(
+      "Clear Cache",
+      "This will delete all locally cached files. Files will be re-downloaded when you open them.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Clear",
+          style: "destructive",
+          onPress: async () => {
+            await clearCache();
+            setCacheSize(0);
+            setCacheCount(0);
+            toast.success("Cache cleared");
+          },
+        },
+      ],
+    );
+  };
 
   const { data: stats, isLoading: isLoadingStats } = useQuery({
     queryKey: fileKeys.storage(user?.$id ?? ""),
@@ -400,7 +431,7 @@ export default function ProfileScreen() {
           <Text className="text-sm text-muted mt-1">{user?.email ?? ""}</Text>
 
           {memberSince && (
-            <View className="flex-row items-center gap-1.5 mt-3 bg-background rounded-full px-3 py-1.5">
+            <View className="flex-row items-center gap-1.5 mt-3 bg-[#9bf4bb36] rounded-full px-3 py-1.5">
               <Feather name="calendar" size={12} color="#6B7280" />
               <Text className="text-xs text-muted">
                 Member since {memberSince}
@@ -459,6 +490,29 @@ export default function ProfileScreen() {
             label="Version"
             value="1.0.0"
             showChevron={false}
+          />
+        </View>
+
+        <SectionHeader title="Offline Cache" />
+        <View
+          className="mx-5 rounded-2xl overflow-hidden"
+          style={{ borderWidth: 1, borderColor: "#E5E7EB" }}
+        >
+          <SettingsRow
+            icon="hard-drive"
+            label="Cached Files"
+            value={
+              cacheCount === 0
+                ? "Empty"
+                : `${cacheCount} file${cacheCount !== 1 ? "s" : ""} · ${formatFileSize(cacheSize)}`
+            }
+            showChevron={false}
+          />
+          <SettingsRow
+            icon="trash-2"
+            label="Clear Cache"
+            onPress={handleClearCache}
+            danger={cacheCount > 0}
           />
         </View>
 
