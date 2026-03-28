@@ -28,7 +28,7 @@ export default function ProgressBar({
   progress,
   color = "#14532D",
   trackColor = "#E5E7EB",
-  height = 8,
+  height = 6,
   className = "",
   duration = 400,
 }: ProgressBarProps) {
