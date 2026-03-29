@@ -1,12 +1,13 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
-import React from "react";
+import React, { useRef } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 
 import { storage } from "@/lib/appwrite";
 import { formatDate, formatFileSize } from "@/lib/utils";
 import type { FileItem } from "@/types";
+import type { AnchorPosition } from "./FileActionMenu";
 
 const BUCKET_ID = process.env.EXPO_PUBLIC_APPWRITE_BUCKET_ID!;
 
@@ -14,8 +15,8 @@ interface FileCardProps {
   file: FileItem;
   viewMode: "list" | "grid";
   onPress: () => void;
-  onLongPress?: () => void;
-  onMenuPress?: () => void;
+  onLongPress?: (anchor: AnchorPosition) => void;
+  onMenuPress?: (anchor: AnchorPosition) => void;
   jwt?: string;
   isCached?: boolean;
 }
@@ -37,26 +38,39 @@ export default function FileCard({
   isCached = false,
 }: FileCardProps) {
   const config = ICON_CONFIG[file.category] ?? ICON_CONFIG.other;
+  const cardRef = useRef<View>(null);
+  const menuRef = useRef<View>(null);
 
   const thumbnailUrl =
     jwt && (file.category === "image" || file.category === "video")
       ? `${storage.getFilePreviewURL(BUCKET_ID, file.storageFileId).href}&jwt=${jwt}`
       : null;
 
+  const measureAndCall = (
+    ref: React.RefObject<View | null>,
+    callback: ((anchor: AnchorPosition) => void) | undefined,
+  ) => {
+    if (!callback) return;
+    ref.current?.measureInWindow((x, y, width, height) => {
+      callback({ x, y, width, height });
+    });
+  };
+
   const handleLongPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onLongPress?.();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    measureAndCall(cardRef, onLongPress);
   };
 
   const handleMenuPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onMenuPress?.();
+    measureAndCall(menuRef, onMenuPress);
   };
 
-  // horizontal row
+  // ── List row ──────────────────────────────────────────────────────────────
   if (viewMode === "list") {
     return (
       <TouchableOpacity
+        ref={cardRef}
         onPress={onPress}
         onLongPress={handleLongPress}
         activeOpacity={0.7}
@@ -92,6 +106,7 @@ export default function FileCard({
         </View>
 
         <TouchableOpacity
+          ref={menuRef}
           onPress={handleMenuPress}
           hitSlop={10}
           activeOpacity={0.6}
@@ -102,8 +117,10 @@ export default function FileCard({
     );
   }
 
+  // ── Grid card ─────────────────────────────────────────────────────────────
   return (
     <TouchableOpacity
+      ref={cardRef}
       onPress={onPress}
       onLongPress={handleLongPress}
       activeOpacity={0.8}
@@ -183,6 +200,7 @@ export default function FileCard({
         </View>
 
         <TouchableOpacity
+          ref={menuRef}
           onPress={handleMenuPress}
           hitSlop={8}
           activeOpacity={0.6}

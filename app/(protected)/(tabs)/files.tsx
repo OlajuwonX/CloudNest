@@ -12,7 +12,9 @@ import { Text, TouchableOpacity, View } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import FileActionSheet from "@/components/FileActionSheet";
+import FileActionSheet, {
+  type AnchorPosition,
+} from "@/components/FileActionMenu";
 import FileCard from "@/components/FileCard";
 import FileDetailsModal from "@/components/FileDetailsModal";
 import FilterSheet from "@/components/FilterSheet";
@@ -39,6 +41,7 @@ export default function FilesScreen() {
   });
   const [filterVisible, setFilterVisible] = useState(false);
   const [actionFile, setActionFile] = useState<FileItem | null>(null);
+  const [actionAnchor, setActionAnchor] = useState<AnchorPosition | null>(null);
   const [renameFile, setRenameFile] = useState<FileItem | null>(null);
   const [detailsFile, setDetailsFile] = useState<FileItem | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -74,10 +77,10 @@ export default function FilesScreen() {
     enabled: !!user,
   });
 
-  // Flatten all pages into a single array for the FlashList.
+  // flatten all pages into a single array for the FlashList.
   const files = data?.pages.flatMap((p) => p.files) ?? [];
 
-  // Pull-to-refresh: invalidate this query so React Query refetches from page 1.
+  // pull-to-refresh: invalidate this query so React Query refetches from page 1.
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await refetch();
@@ -129,7 +132,10 @@ export default function FilesScreen() {
     }
     try {
       toast.loading("Preparing…");
-      const url = storage.getFileDownloadURL(BUCKET_ID, file.storageFileId).href;
+      const url = storage.getFileDownloadURL(
+        BUCKET_ID,
+        file.storageFileId,
+      ).href;
       const localFile = await File.downloadFileAsync(
         url,
         new File(Paths.document, file.fileName),
@@ -282,8 +288,14 @@ export default function FilesScreen() {
               onPress={() =>
                 router.push(`/(protected)/file/${item.$id}` as any)
               }
-              onLongPress={() => setActionFile(item)}
-              onMenuPress={() => setActionFile(item)}
+              onLongPress={(anchor) => {
+                setActionFile(item);
+                setActionAnchor(anchor);
+              }}
+              onMenuPress={(anchor) => {
+                setActionFile(item);
+                setActionAnchor(anchor);
+              }}
             />
           )}
           ListFooterComponent={
@@ -309,8 +321,12 @@ export default function FilesScreen() {
 
       <FileActionSheet
         isVisible={actionFile !== null}
-        onClose={() => setActionFile(null)}
+        onClose={() => {
+          setActionFile(null);
+          setActionAnchor(null);
+        }}
         file={actionFile}
+        anchor={actionAnchor}
         onPreview={(f) => router.push(`/(protected)/file/${f.$id}` as any)}
         onDownload={handleDownload}
         onCopyLink={handleCopyLink}

@@ -17,7 +17,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import FileActionSheet from "@/components/FileActionSheet";
+import FileActionMenu, { type AnchorPosition } from "@/components/FileActionMenu";
 import FileCard from "@/components/FileCard";
 import FileDetailsModal from "@/components/FileDetailsModal";
 import QuickAction from "@/components/QuickAction";
@@ -64,6 +64,7 @@ export default function HomeScreen() {
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
   const [actionFile, setActionFile] = useState<FileItem | null>(null);
+  const [actionAnchor, setActionAnchor] = useState<AnchorPosition | null>(null);
   const [renameFile, setRenameFile] = useState<FileItem | null>(null);
   const [detailsFile, setDetailsFile] = useState<FileItem | null>(null);
   const [jwt, setJwt] = useState<string | undefined>(undefined);
@@ -143,7 +144,10 @@ export default function HomeScreen() {
     }
     try {
       toast.loading("Preparing…");
-      const url = storage.getFileDownloadURL(BUCKET_ID, file.storageFileId).href;
+      const url = storage.getFileDownloadURL(
+        BUCKET_ID,
+        file.storageFileId,
+      ).href;
       const localFile = await File.downloadFileAsync(
         url,
         new File(Paths.document, file.fileName),
@@ -291,8 +295,8 @@ export default function HomeScreen() {
                   }
                   jwt={jwt}
                   isCached={!!cacheIndex[file.storageFileId]}
-                  onLongPress={() => setActionFile(file)}
-                  onMenuPress={() => setActionFile(file)}
+                  onLongPress={(anchor) => { setActionFile(file); setActionAnchor(anchor); }}
+                  onMenuPress={(anchor) => { setActionFile(file); setActionAnchor(anchor); }}
                 />
               ))}
             </View>
@@ -321,10 +325,11 @@ export default function HomeScreen() {
         )}
       </ScrollView>
 
-      <FileActionSheet
+      <FileActionMenu
         isVisible={actionFile !== null}
-        onClose={() => setActionFile(null)}
+        onClose={() => { setActionFile(null); setActionAnchor(null); }}
         file={actionFile}
+        anchor={actionAnchor}
         onPreview={(f) => router.push(`/(protected)/file/${f.$id}` as any)}
         onDownload={handleDownload}
         onCopyLink={handleCopyLink}
