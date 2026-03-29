@@ -96,9 +96,9 @@ const CATEGORY_BG: Record<string, string> = {
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 const CARD_WIDTH = Math.min(300, SCREEN_W - 40);
 // for smart positioning (header + 7 rows * ~56px)
-const ROW_HEIGHT = 50;
-const HEADER_HEIGHT = 70;
-const ESTIMATED_CARD_H = HEADER_HEIGHT + 7 * ROW_HEIGHT;
+// const ROW_HEIGHT = 50;
+// const HEADER_HEIGHT = 70;
+// const ESTIMATED_CARD_H = HEADER_HEIGHT + 7 * ROW_HEIGHT;
 
 function calcCardTop(anchor: AnchorPosition | null): number {
   const CARD_MAX_H = SCREEN_H * 0.5;
