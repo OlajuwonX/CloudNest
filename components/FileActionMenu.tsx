@@ -94,26 +94,29 @@ const CATEGORY_BG: Record<string, string> = {
 };
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
-const CARD_MARGIN = 20;
-const CARD_WIDTH = SCREEN_W - CARD_MARGIN * 2;
+const CARD_WIDTH = Math.min(300, SCREEN_W - 40);
 // for smart positioning (header + 7 rows * ~56px)
-const ESTIMATED_CARD_H = 80 + 7 * 56;
+const ROW_HEIGHT = 50;
+const HEADER_HEIGHT = 70;
+const ESTIMATED_CARD_H = HEADER_HEIGHT + 7 * ROW_HEIGHT;
 
 function calcCardTop(anchor: AnchorPosition | null): number {
-  if (!anchor) return SCREEN_H / 2 - ESTIMATED_CARD_H / 2;
+  const CARD_MAX_H = SCREEN_H * 0.5;
+
+  if (!anchor) return SCREEN_H / 2 - CARD_MAX_H / 2;
 
   const anchorBottom = anchor.y + anchor.height;
-  const spaceBelow = SCREEN_H - anchorBottom - 12;
-  const spaceAbove = anchor.y - 12;
 
-  // prefer below; fall back to above; last resort: centre
-  if (spaceBelow >= Math.min(ESTIMATED_CARD_H, 320)) {
-    return anchorBottom + 12;
+  // below first
+  let top = anchorBottom + 12;
+
+  // overflows → move above
+  if (top + CARD_MAX_H > SCREEN_H) {
+    top = anchor.y - CARD_MAX_H - 12;
   }
-  if (spaceAbove >= Math.min(ESTIMATED_CARD_H, 320)) {
-    return Math.max(12, anchor.y - Math.min(ESTIMATED_CARD_H, 320) - 12);
-  }
-  return Math.max(12, SCREEN_H / 2 - Math.min(ESTIMATED_CARD_H, 320) / 2);
+
+  // clamp inside screen
+  return Math.max(12, Math.min(top, SCREEN_H - CARD_MAX_H - 12));
 }
 
 export default function FileActionMenu({
@@ -151,15 +154,35 @@ export default function FileActionMenu({
       scale.value = withTiming(0.88, { duration: 140 });
     }
   }, [isVisible, opacity, scale]);
+  function calcCardLeft(anchor: AnchorPosition | null) {
+    if (!anchor) return (SCREEN_W - CARD_WIDTH) / 2;
+
+    const centerX = anchor.x + anchor.width / 2;
+
+    return Math.max(
+      12,
+      Math.min(centerX - CARD_WIDTH / 2, SCREEN_W - CARD_WIDTH - 12),
+    );
+  }
+
+  const cardLeft = useSharedValue(calcCardLeft(anchor));
+
+  useEffect(() => {
+    cardLeft.value = calcCardLeft(anchor);
+  }, [anchor, cardLeft]);
 
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
   }));
 
   const cardStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+    transform: [
+      { scale: scale.value },
+      { translateY: withTiming(isVisible ? 0 : 10) },
+    ],
     opacity: opacity.value,
     top: cardTop.value,
+    left: cardLeft.value,
   }));
 
   const handleDelete = (f: FileItem) => {
@@ -225,7 +248,7 @@ export default function FileActionMenu({
       onRequestClose={onClose}
     >
       <Animated.View style={[{ flex: 1 }, backdropStyle]}>
-        <BlurView intensity={28} tint="dark" style={{ flex: 1 }}>
+        <BlurView intensity={35} tint="dark" style={{ flex: 1 }}>
           <Pressable style={{ flex: 1 }} onPress={onClose} />
         </BlurView>
       </Animated.View>
@@ -234,7 +257,7 @@ export default function FileActionMenu({
         style={[
           {
             position: "absolute",
-            left: CARD_MARGIN,
+
             width: CARD_WIDTH,
           },
           cardStyle,
@@ -246,27 +269,27 @@ export default function FileActionMenu({
           style={{
             backgroundColor: "#fff",
             borderRadius: 18,
-            marginBottom: 10,
+            marginBottom: 2,
             overflow: "hidden",
             shadowColor: "#000",
-            shadowOpacity: 0.12,
-            shadowRadius: 16,
-            shadowOffset: { width: 0, height: 6 },
-            elevation: 8,
+            shadowOpacity: 0.18,
+            shadowRadius: 24,
+            shadowOffset: { width: 0, height: 12 },
+            elevation: 12,
           }}
         >
           <View
             style={{
               flexDirection: "row",
               alignItems: "center",
-              padding: 16,
+              padding: 14,
               gap: 12,
             }}
           >
             <View
               style={{
-                width: 44,
-                height: 44,
+                width: 40,
+                height: 40,
                 borderRadius: 12,
                 backgroundColor: categoryBg,
                 alignItems: "center",
@@ -278,7 +301,7 @@ export default function FileActionMenu({
             <View style={{ flex: 1 }}>
               <Text
                 style={{
-                  fontSize: 15,
+                  fontSize: 14,
                   fontWeight: "600",
                   color: "#111827",
                 }}
@@ -286,7 +309,7 @@ export default function FileActionMenu({
               >
                 {file.fileName}
               </Text>
-              <Text style={{ fontSize: 12, color: "#6B7280", marginTop: 2 }}>
+              <Text style={{ fontSize: 11, color: "#6B7280", marginTop: 2 }}>
                 {formatFileSize(file.fileSize)} · {file.category}
               </Text>
             </View>
@@ -303,11 +326,14 @@ export default function FileActionMenu({
             shadowRadius: 16,
             shadowOffset: { width: 0, height: 6 },
             elevation: 8,
+            maxHeight: SCREEN_H * 0.5,
           }}
         >
           <ScrollView
-            scrollEnabled={false}
             showsVerticalScrollIndicator={false}
+            bounces={false}
+            contentContainerStyle={{ paddingBottom: 6 }}
+            style={{ flexGrow: 0 }}
           >
             {actions.map((action, idx) => (
               <TouchableOpacity
@@ -318,16 +344,16 @@ export default function FileActionMenu({
                   flexDirection: "row",
                   alignItems: "center",
                   paddingHorizontal: 16,
-                  paddingVertical: 14,
+                  paddingVertical: 9,
                   borderBottomWidth: idx < actions.length - 1 ? 0.5 : 0,
                   borderBottomColor: "#F3F4F6",
                 }}
               >
                 <View
                   style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: 10,
+                    width: 30,
+                    height: 30,
+                    borderRadius: 8,
                     backgroundColor: action.danger ? "#FEF2F2" : "#F9FAFB",
                     alignItems: "center",
                     justifyContent: "center",
@@ -336,14 +362,14 @@ export default function FileActionMenu({
                 >
                   <Feather
                     name={action.icon}
-                    size={17}
+                    size={16}
                     color={action.danger ? "#DC2626" : "#374151"}
                   />
                 </View>
                 <Text
                   style={{
                     flex: 1,
-                    fontSize: 15,
+                    fontSize: 14,
                     color: action.danger ? "#DC2626" : "#111827",
                     fontWeight: action.danger ? "500" : "400",
                   }}
