@@ -176,6 +176,7 @@ Create a `.env` file at the project root:
 ```env
 EXPO_PUBLIC_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
 EXPO_PUBLIC_APPWRITE_PROJECT_ID=your_project_id
+EXPO_PUBLIC_APPWRITE_PLATFORM=co.phantomdev.cloudnest
 EXPO_PUBLIC_APPWRITE_DATABASE_ID=your_database_id
 EXPO_PUBLIC_APPWRITE_FILES_TABLE_ID=your_collection_id
 EXPO_PUBLIC_APPWRITE_BUCKET_ID=your_bucket_id
