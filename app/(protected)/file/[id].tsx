@@ -1,16 +1,12 @@
 import { toast } from "@backpackapp-io/react-native-toast";
 import { Feather } from "@expo/vector-icons";
-import {
-  AVPlaybackStatus,
-  AVPlaybackStatusSuccess,
-  ResizeMode,
-  Video,
-} from "expo-av";
+import { useEvent } from "expo";
 import { File, Paths } from "expo-file-system";
 import { Image } from "expo-image";
 import * as MediaLibrary from "expo-media-library";
 import { router, useLocalSearchParams } from "expo-router";
 import * as Sharing from "expo-sharing";
+import { useVideoPlayer, VideoView } from "expo-video";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -50,25 +46,45 @@ function fmtMs(ms: number): string {
 }
 
 function VideoPlayer({ uri }: { uri: string }) {
-  const videoRef = useRef<Video>(null);
-  const [status, setStatus] = useState<AVPlaybackStatus | null>(null);
-  const [shouldPlay, setShouldPlay] = useState(false);
+  const videoRef = useRef<VideoView>(null);
+  // the player owns playback state; useVideoPlayer releases it on unmount.
+  const player = useVideoPlayer(uri, (p) => {
+    p.timeUpdateEventInterval = 0.25;
+  });
 
-  const loaded: AVPlaybackStatusSuccess | null =
-    status !== null && status.isLoaded ? status : null;
-  const hasError =
-    status !== null && !status.isLoaded && "error" in status && !!status.error;
-  const isPlaying = shouldPlay;
-  const posMs = loaded?.positionMillis ?? 0;
-  const durMs = loaded?.durationMillis ?? 0;
-  const progress = durMs > 0 ? posMs / durMs : 0;
+  const { status } = useEvent(player, "statusChange", {
+    status: player.status,
+  });
+  const { isPlaying } = useEvent(player, "playingChange", {
+    isPlaying: player.playing,
+  });
+  const { currentTime } = useEvent(player, "timeUpdate", {
+    currentTime: player.currentTime,
+    currentLiveTimestamp: null,
+    currentOffsetFromLive: null,
+    bufferedPosition: 0,
+  });
 
-  const togglePlay = () => setShouldPlay((p) => !p);
+  const loaded = status === "readyToPlay";
+  const hasError = status === "error";
+  const posMs = currentTime * 1000;
+  const durMs = loaded ? player.duration * 1000 : 0;
+  const progress = durMs > 0 ? Math.min(posMs / durMs, 1) : 0;
+
+  const togglePlay = () => {
+    if (isPlaying) {
+      player.pause();
+    } else {
+      // restart from the beginning once playback has reached the end
+      if (durMs > 0 && posMs >= durMs - 250) player.replay();
+      else player.play();
+    }
+  };
 
   const handleFullscreen = async () => {
     if (!videoRef.current) return;
     try {
-      await videoRef.current.presentFullscreenPlayer();
+      await videoRef.current.enterFullscreen();
     } catch {
       // component unmounted before fullscreen could be entered — ignore
     }
@@ -87,14 +103,13 @@ function VideoPlayer({ uri }: { uri: string }) {
 
   return (
     <View className="flex-1 bg-black">
-      <Video
+      <VideoView
         ref={videoRef}
-        source={{ uri }}
+        player={player}
         style={{ width: "100%", height: "100%" }}
-        resizeMode={ResizeMode.CONTAIN}
-        useNativeControls={false}
-        shouldPlay={shouldPlay}
-        onPlaybackStatusUpdate={setStatus}
+        contentFit="contain"
+        nativeControls={false}
+        fullscreenOptions={{ enable: true }}
       />
 
       <TouchableOpacity
@@ -375,8 +390,12 @@ export default function FileDetailScreen() {
       );
       toast.dismiss();
       if (file.category === "image" || file.category === "video") {
-        await MediaLibrary.requestPermissionsAsync();
-        await MediaLibrary.saveToLibraryAsync(localFile.uri);
+        const { granted } = await MediaLibrary.requestPermissionsAsync(true);
+        if (!granted) {
+          toast.error("Allow photo access to save to your library");
+          return;
+        }
+        await MediaLibrary.Asset.create(localFile.uri);
         toast.success("Saved to camera roll");
       } else {
         await Sharing.shareAsync(localFile.uri);

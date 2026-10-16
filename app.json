@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "cloudnest",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.cloudnest.app",
@@ -18,7 +17,6 @@
     "android": {
       "package": "co.phantomdev.cloudnest",
       "adaptiveIcon": {},
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "intentFilters": [
         {
@@ -59,7 +57,8 @@
       "expo-secure-store",
       "expo-mail-composer",
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true,
